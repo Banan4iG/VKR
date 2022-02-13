@@ -50,12 +50,18 @@ list_layers = project.mapLayersByName(layer_name)
 points200_layer = list_layers[0]
 
 point_array = []
+point_not_vertex = []
 features = points200_layer.getFeatures()
 for feature in features:
     geom = feature.geometry()
+    attr_list = feature.attributes()
+    print(attr_list)
     list_points = geom.asMultiPoint()
     pointXY = [list_points[0].x(), list_points[0].y()]
-    point_array.append(pointXY)
+    if attr_list[1] == "true":
+        point_array.append(pointXY)
+    else:
+        point_not_vertex.append(pointXY)
 
 points = np.array(point_array)
 tri = Delaunay(points)
