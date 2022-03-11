@@ -1,6 +1,27 @@
 from scipy.spatial import Delaunay
 import numpy as np
 
+def get_list_points(points_layer_name):
+    list_layers = project.mapLayersByName(points_layer_name)
+    points200_layer = list_layers[0]
+
+    point_vertex = []
+    point_not_vertex = []
+    features = points200_layer.getFeatures()
+    for feature in features:
+        geom = feature.geometry()
+        attr_list = feature.attributes()
+        print(attr_list)
+        list_points = geom.asMultiPoint()
+        pointXY = [list_points[0].x(), list_points[0].y()]
+        if attr_list[1] == "true":
+            point_vertex.append(pointXY)
+        else:
+            point_not_vertex.append(pointXY)
+        return(point_vertex, point_not_vertex)
+        
+
+
 def barycentric_out(pointXY, triangle):
     pointX = pointXY[0]
     pointY = pointXY[1]
@@ -39,7 +60,7 @@ def barycentric_in(coor, triangle):
 
 project = QgsProject.instance()
 
-layer_name = "treangle"
+layer_name = "triangle"
 list_layers = project.mapLayersByName(layer_name)
 if list_layers:
     treangle_layer = list_layers[0]
@@ -49,19 +70,8 @@ layer_name = "points200"
 list_layers = project.mapLayersByName(layer_name)
 points200_layer = list_layers[0]
 
-point_array = []
-point_not_vertex = []
-features = points200_layer.getFeatures()
-for feature in features:
-    geom = feature.geometry()
-    attr_list = feature.attributes()
-    print(attr_list)
-    list_points = geom.asMultiPoint()
-    pointXY = [list_points[0].x(), list_points[0].y()]
-    if attr_list[1] == "true":
-        point_array.append(pointXY)
-    else:
-        point_not_vertex.append(pointXY)
+(point_vertex, points_layer_name) = get_
+point_not_vertex.append(pointXY)
 
 points = np.array(point_array)
 tri = Delaunay(points)
@@ -69,7 +79,7 @@ triangleXY = points[tri.simplices]
 
 # create layer
 suri = "MultiPolygon?crs=epsg:20008&index=yes"
-vl = QgsVectorLayer(suri, "treangle", "memory")
+vl = QgsVectorLayer(suri, "triangle", "memory")
 pr = vl.dataProvider()
 vl.updateExtents()
 
