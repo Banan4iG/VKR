@@ -1,25 +1,44 @@
 from scipy.spatial import Delaunay
 import numpy as np
 
-def get_list_points(points_layer_name):
-    list_layers = project.mapLayersByName(points_layer_name)
-    points200_layer = list_layers[0]
+def draw_triangle(vertex_points_layer_name):
+    list_layers = project.mapLayersByName(vertex_points_layer_name)
+    layer_name = list_layers[0]
 
     point_vertex = []
-    point_not_vertex = []
-    features = points200_layer.getFeatures()
+    features = layer_name.getFeatures()
     for feature in features:
         geom = feature.geometry()
         attr_list = feature.attributes()
-        print(attr_list)
         list_points = geom.asMultiPoint()
         pointXY = [list_points[0].x(), list_points[0].y()]
-        if attr_list[1] == "true":
-            point_vertex.append(pointXY)
-        else:
-            point_not_vertex.append(pointXY)
-        return(point_vertex, point_not_vertex)
-        
+        point_vertex.append(pointXY)
+    
+    points = np.array(point_vertex)
+    tri = Delaunay(points)
+    triangleXY = points[tri.simplices]
+
+    # create layer
+    suri = "MultiPolygon?crs=epsg:20008&index=yes"
+    tr_name = "triangle" + vertex_points_layer_name
+    vl = QgsVectorLayer(suri, tr_name, "memory")
+    pr = vl.dataProvider()
+    vl.updateExtents()
+
+    # add a feature
+    fet = QgsFeature()
+    for triangl in triangleXY:
+        fet.setGeometry(QgsGeometry.fromPolygonXY([[QgsPointXY(triangl[0][0], triangl[0][1]), QgsPointXY(triangl[1][0], triangl[1][1]), QgsPointXY(triangl[2][0], triangl[2][1]), QgsPointXY(triangl[0][0], triangl[0][1])]]))
+        pr.addFeatures([fet])
+        vl.updateExtents()
+
+    vl.updateExtents()
+    if not vl.isValid():
+        print("Layer failed to load!")
+    else:
+        QgsProject.instance().addMapLayer(vl)        
+    
+    return triangleXY
 
 
 def barycentric_out(pointXY, triangle):
@@ -60,41 +79,25 @@ def barycentric_in(coor, triangle):
 
 project = QgsProject.instance()
 
-layer_name = "triangle"
+layer_name = "trianglepoints200"
 list_layers = project.mapLayersByName(layer_name)
 if list_layers:
     treangle_layer = list_layers[0]
     project.removeMapLayer(treangle_layer.id())
 
-layer_name = "points200"
+layer_name = "trianglepoints1000"
 list_layers = project.mapLayersByName(layer_name)
-points200_layer = list_layers[0]
+if list_layers:
+    treangle_layer = list_layers[0]
+    project.removeMapLayer(treangle_layer.id())
 
-(point_vertex, points_layer_name) = get_
-point_not_vertex.append(pointXY)
+layer_name_200 = "points200"
+layer_name_1000 = "points1000"
 
-points = np.array(point_array)
-tri = Delaunay(points)
-triangleXY = points[tri.simplices]
+triangleXY_200 = draw_triangle(layer_name_200)
+triangleXY_1000 = draw_triangle(layer_name_1000)
 
-# create layer
-suri = "MultiPolygon?crs=epsg:20008&index=yes"
-vl = QgsVectorLayer(suri, "triangle", "memory")
-pr = vl.dataProvider()
-vl.updateExtents()
 
-# add a feature
-fet = QgsFeature()
-for triangl in triangleXY:
-    fet.setGeometry(QgsGeometry.fromPolygonXY([[QgsPointXY(triangl[0][0], triangl[0][1]), QgsPointXY(triangl[1][0], triangl[1][1]), QgsPointXY(triangl[2][0], triangl[2][1]), QgsPointXY(triangl[0][0], triangl[0][1])]]))
-    pr.addFeatures([fet])
-    vl.updateExtents()
-
-vl.updateExtents()
-if not vl.isValid():
-    print("Layer failed to load!")
-else:
-    QgsProject.instance().addMapLayer(vl)
 #print("fields:", len(pr.fields()))
 #print("features:", pr.featureCount())
 #e = vl.extent()
