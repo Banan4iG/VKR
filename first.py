@@ -1,6 +1,26 @@
 from scipy.spatial import Delaunay
 import numpy as np
 
+
+def is_in_triangle(pointXY, triangle):
+    pointX = pointXY[0]
+    pointY = pointXY[1]
+    pointX1 = triangle[0][0]
+    pointY1 = triangle[0][1]
+    pointX2 = triangle[1][0]
+    pointY2 = triangle[1][1]
+    pointX3 = triangle[2][0]
+    pointY3 = triangle[2][1]
+    v1 = ((pointX1 - pointX) * (pointY2 - pointY1)) - ((pointX2 - pointX1)*(pointY1 - pointY))
+    v2 = ((pointX2 - pointX) * (pointY3 - pointY2)) - ((pointX3 - pointX2)*(pointY2 - pointY))
+    v3 = ((pointX3 - pointX) * (pointY1 - pointY3)) - ((pointX1 - pointX3)*(pointY3 - pointY))
+    if (v1 >= 0 and v2 >= 0 and v3 >= 0) or (v1 < 0 and v2 < 0 and v3 < 0):
+        return True
+    else:
+        return False
+    
+    
+
 def draw_triangle(vertex_points_layer_name):
     list_layers = project.mapLayersByName(vertex_points_layer_name)
     layer_name = list_layers[0]
@@ -18,14 +38,12 @@ def draw_triangle(vertex_points_layer_name):
     tri = Delaunay(points)
     triangleXY = points[tri.simplices]
 
-    # create layer
     suri = "MultiPolygon?crs=epsg:20008&index=yes"
     tr_name = "triangle" + vertex_points_layer_name
     vl = QgsVectorLayer(suri, tr_name, "memory")
     pr = vl.dataProvider()
     vl.updateExtents()
 
-    # add a feature
     fet = QgsFeature()
     for triangl in triangleXY:
         fet.setGeometry(QgsGeometry.fromPolygonXY([[QgsPointXY(triangl[0][0], triangl[0][1]), QgsPointXY(triangl[1][0], triangl[1][1]), QgsPointXY(triangl[2][0], triangl[2][1]), QgsPointXY(triangl[0][0], triangl[0][1])]]))
@@ -97,6 +115,44 @@ layer_name_1000 = "points1000"
 triangleXY_200 = draw_triangle(layer_name_200)
 triangleXY_1000 = draw_triangle(layer_name_1000)
 
+list_layers = project.mapLayersByName("points")
+layer_name = list_layers[0]
+features = layer_name.getFeatures()
+points = []
+for feature in features:
+    geom = feature.geometry()
+    attr_list = feature.attributes()
+    list_points = geom.asMultiPoint()
+    pointXY = [list_points[0].x(), list_points[0].y()]
+    points.append(pointXY)
+coors = []
+for point in  points:
+    for triangle in triangleXY_200:
+        if(is_in_triangle(point,triangle)):
+            coors.append(barycentric_out(point, triangle))
+            break
+
+
+suri = "MultiPoint?crs=epsg:20008&index=yes"
+name = "moved_point"
+vl = QgsVectorLayer(suri, name, "memory")
+pr = vl.dataProvider()
+vl.updateExtents()
+fet = QgsFeature()
+
+for coor in coors:
+    for triangle in triangleXY_1000:
+        pointXY = barycentric_in(coor, triangle)
+        if(is_in_triangle(pointXY, triangle)):
+            fet.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(pointXY[0], pointXY[1])))
+            pr.addFeatures([fet])
+            vl.updateExtents()
+            break
+
+if not vl.isValid():
+    print("Layer failed to load!")
+else:
+    QgsProject.instance().addMapLayer(vl)
 
 #print("fields:", len(pr.fields()))
 #print("features:", pr.featureCount())
