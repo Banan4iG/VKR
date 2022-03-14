@@ -19,7 +19,10 @@ def is_in_triangle(pointXY, triangle):
     else:
         return False
     
-    
+def get_key(d, value):
+    for k, v in d.items():
+        if v == value:
+            return k
 
 def draw_triangle(vertex_points_layer_name):
     list_layers = project.mapLayersByName(vertex_points_layer_name)
@@ -54,10 +57,9 @@ def draw_triangle(vertex_points_layer_name):
     if not vl.isValid():
         print("Layer failed to load!")
     else:
-        QgsProject.instance().addMapLayer(vl)        
+        QgsProject.instance().addMapLayer(vl)
     
     return triangleXY
-
 
 def barycentric_out(pointXY, triangle):
     pointX = pointXY[0]
@@ -103,6 +105,12 @@ if list_layers:
     treangle_layer = list_layers[0]
     project.removeMapLayer(treangle_layer.id())
 
+layer_name = "moved_point"
+list_layers = project.mapLayersByName(layer_name)
+if list_layers:
+    treangle_layer = list_layers[0]
+    project.removeMapLayer(treangle_layer.id())
+
 layer_name = "trianglepoints1000"
 list_layers = project.mapLayersByName(layer_name)
 if list_layers:
@@ -114,6 +122,20 @@ layer_name_1000 = "points1000"
 
 triangleXY_200 = draw_triangle(layer_name_200)
 triangleXY_1000 = draw_triangle(layer_name_1000)
+
+dict_triangleXY_200 = {}
+count = 0
+for tr in triangleXY_200:
+    print(list(tr))
+#    dict_triangleXY_200[list(tr)] = count
+    count += 1
+
+dict_triangleXY_1000 = {}
+count = 0
+for tr in triangleXY_1000:
+    dict_triangleXY_1000[count] = tr
+    count += 1
+
 
 list_layers = project.mapLayersByName("points")
 layer_name = list_layers[0]
@@ -129,9 +151,11 @@ coors = []
 for point in  points:
     for triangle in triangleXY_200:
         if(is_in_triangle(point,triangle)):
-            coors.append(barycentric_out(point, triangle))
+#            print(get_key(dict_triangleXY_200, triangle))
+            coors.append([dict_triangleXY_200[triangle], barycentric_out(point, triangle)])
             break
 
+print(coors)
 
 suri = "MultiPoint?crs=epsg:20008&index=yes"
 name = "moved_point"
