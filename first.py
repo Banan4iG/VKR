@@ -91,8 +91,8 @@ def barycentric_in(coor, triangle):
     point2Y = triangle[1][1]
     point3X = triangle[2][0]
     point3Y = triangle[2][1]
-    pointX = u*point1X + v*point2X + w*point3X
-    pointY = u*point1Y + v*point2Y + w*point3Y
+    pointX = u*point3X + v*point2X + w*point1X
+    pointY = u*point3Y + v*point2Y + w*point1Y
     pointXY = [pointX, pointY]
     return pointXY
 
@@ -126,8 +126,7 @@ triangleXY_1000 = draw_triangle(layer_name_1000)
 dict_triangleXY_200 = {}
 count = 0
 for tr in triangleXY_200:
-    print(list(tr))
-#    dict_triangleXY_200[list(tr)] = count
+    dict_triangleXY_200[str(tr)] = count
     count += 1
 
 dict_triangleXY_1000 = {}
@@ -135,7 +134,6 @@ count = 0
 for tr in triangleXY_1000:
     dict_triangleXY_1000[count] = tr
     count += 1
-
 
 list_layers = project.mapLayersByName("points")
 layer_name = list_layers[0]
@@ -151,11 +149,9 @@ coors = []
 for point in  points:
     for triangle in triangleXY_200:
         if(is_in_triangle(point,triangle)):
-#            print(get_key(dict_triangleXY_200, triangle))
-            coors.append([dict_triangleXY_200[triangle], barycentric_out(point, triangle)])
+            coors.append([dict_triangleXY_200[str(triangle)], barycentric_out(point, triangle)])
             break
 
-print(coors)
 
 suri = "MultiPoint?crs=epsg:20008&index=yes"
 name = "moved_point"
@@ -165,13 +161,10 @@ vl.updateExtents()
 fet = QgsFeature()
 
 for coor in coors:
-    for triangle in triangleXY_1000:
-        pointXY = barycentric_in(coor, triangle)
-        if(is_in_triangle(pointXY, triangle)):
-            fet.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(pointXY[0], pointXY[1])))
-            pr.addFeatures([fet])
-            vl.updateExtents()
-            break
+    pointXY = barycentric_in(coor[1], dict_triangleXY_1000[coor[0]])
+    fet.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(pointXY[0], pointXY[1])))
+    pr.addFeatures([fet])
+    vl.updateExtents()
 
 if not vl.isValid():
     print("Layer failed to load!")
