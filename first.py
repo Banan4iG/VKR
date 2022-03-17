@@ -3,12 +3,11 @@ import numpy as np
 
 class Moved:
     
-    def __init__(self, vertex_point_in, vertex_point_out, move_layer):
+    def __init__(self, vertex_point_in, vertex_point_out, move_layer, type_of_geom):
         self.vertex_point_in = vertex_point_in
         self.vertex_point_out = vertex_point_out
         self.move_layer = move_layer
-        
-        
+        self.type_of_geom = type_of_geom
         
     def is_in_triangle(self, pointXY, triangle):
         pointX = pointXY[0]
@@ -102,7 +101,7 @@ class Moved:
         pointY = u*point3Y + v*point2Y + w*point1Y
         pointXY = [pointX, pointY]
         return pointXY
-
+    
     def run(self):
         project = QgsProject.instance()
         
@@ -128,40 +127,124 @@ class Moved:
         list_layers = project.mapLayersByName(self.move_layer)
         layer_name = list_layers[0]
         features = layer_name.getFeatures()
-        points = []
-        for feature in features:
-            geom = feature.geometry()
-            attr_list = feature.attributes()
-            list_points = geom.asMultiPoint()
-            pointXY = [list_points[0].x(), list_points[0].y()]
-            points.append(pointXY)
-        coors = []
-        for point in  points:
-            for triangle in triangleXY_in:
-                if(self.is_in_triangle(point,triangle)):
-                    coors.append([dict_triangleXY_in[str(triangle)], self.barycentric_out(point, triangle)])
-                    break
+        
+               
+        if self.type_of_geom == "Points":
+            points = []
+            for feature in features:
+                geom = feature.geometry()
+                attr_list = feature.attributes()
+                list_points = geom.asMultiPoint()
+                pointXY = [list_points[0].x(), list_points[0].y()]
+                points.append(pointXY)
+            
+            coors = []
+            for point in  points:
+                for triangle in triangleXY_in:
+                    if(self.is_in_triangle(point,triangle)):
+                        coors.append([dict_triangleXY_in[str(triangle)], self.barycentric_out(point, triangle)])
+                        break
 
 
-        suri = "MultiPoint?crs=epsg:20008&index=yes"
-        name = "moved_layer"
-        vl = QgsVectorLayer(suri, name, "memory")
-        pr = vl.dataProvider()
-        vl.updateExtents()
-        fet = QgsFeature()
-
-        for coor in coors:
-            pointXY = self.barycentric_in(coor[1], dict_triangleXY_out[coor[0]])
-            fet.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(pointXY[0], pointXY[1])))
-            pr.addFeatures([fet])
+            suri = "MultiPoint?crs=epsg:20008&index=yes"
+            name = "moved_layer"
+            vl = QgsVectorLayer(suri, name, "memory")
+            pr = vl.dataProvider()
             vl.updateExtents()
+            fet = QgsFeature()
 
+            for coor in coors:
+                pointXY = self.barycentric_in(coor[1], dict_triangleXY_out[coor[0]])
+                fet.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(pointXY[0], pointXY[1])))
+                pr.addFeatures([fet])
+                vl.updateExtents()
+        
+        if self.type_of_geom == "Lines":
+            
+            feature_XY =[]
+            for feature in features:
+                points = []
+                geom = feature.geometry()
+                attr_list = feature.attributes()
+                list_points = geom.asMultiPolyline()
+                for point in list_points[0]:
+                    pointXY = [point.x(), point.y()]
+                    points.append(pointXY)
+                feature_XY.append(points)
+            
+            feature_coors = []
+            for points in feature_XY:
+                coors = []
+                for point in  points:
+                    for triangle in triangleXY_in:
+                        if(self.is_in_triangle(point,triangle)):
+                            coors.append([dict_triangleXY_in[str(triangle)], self.barycentric_out(point, triangle)])
+                            break
+                feature_coors.append(coors)
+
+
+            suri = "MultiLineString?crs=epsg:20008&index=yes"
+            name = "moved_layer"
+            vl = QgsVectorLayer(suri, name, "memory")
+            pr = vl.dataProvider()
+            vl.updateExtents()
+            fet = QgsFeature()
+
+            for coors in feature_coors:
+                list_pointXY = []
+                for coor in coors:
+                    pointXY = self.barycentric_in(coor[1], dict_triangleXY_out[coor[0]])
+                    list_pointXY.append(QgsPointXY(pointXY[0], pointXY[1]))
+                fet.setGeometry(QgsGeometry.fromPolylineXY(list_pointXY))
+                pr.addFeatures([fet])
+                vl.updateExtents()
+        
+        if self.type_of_geom == "Polygons":
+            
+            feature_XY =[]
+            for feature in features:
+                points = []
+                geom = feature.geometry()
+                attr_list = feature.attributes()
+                list_points = geom.asMultiPolygon()
+                for point in list_points[0][0]:
+                    pointXY = [point.x(), point.y()]
+                    points.append(pointXY)
+                feature_XY.append(points)
+            
+            feature_coors = []
+            for points in feature_XY:
+                coors = []
+                for point in  points:
+                    for triangle in triangleXY_in:
+                        if(self.is_in_triangle(point,triangle)):
+                            coors.append([dict_triangleXY_in[str(triangle)], self.barycentric_out(point, triangle)])
+                            break
+                feature_coors.append(coors)
+
+
+            suri = "MultiPolygon?crs=epsg:20008&index=yes"
+            name = "moved_layer"
+            vl = QgsVectorLayer(suri, name, "memory")
+            pr = vl.dataProvider()
+            vl.updateExtents()
+            fet = QgsFeature()
+
+            for coors in feature_coors:
+                list_pointXY = []
+                for coor in coors:
+                    pointXY = self.barycentric_in(coor[1], dict_triangleXY_out[coor[0]])
+                    list_pointXY.append(QgsPointXY(pointXY[0], pointXY[1]))
+                fet.setGeometry(QgsGeometry.fromPolygonXY([list_pointXY]))
+                pr.addFeatures([fet])
+                vl.updateExtents()
+        
         if not vl.isValid():
             print("Layer failed to load!")
         else:
             QgsProject.instance().addMapLayer(vl)
 
-mv = Moved("points200", "points1000", "points")
+mv = Moved("points200", "points1000", "polygons", "Polygons")
 mv.run()
 
 #print("fields:", len(pr.fields()))
