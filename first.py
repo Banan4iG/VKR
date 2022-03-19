@@ -8,6 +8,8 @@ class Moved:
         self.vertex_point_out = vertex_point_out
         self.move_layer = move_layer
         self.type_of_geom = type_of_geom
+        self.dict_points200 = {}
+        self.dict_points1000 = {}
         
     def is_in_triangle(self, pointXY, triangle):
         pointX = pointXY[0]
@@ -31,31 +33,69 @@ class Moved:
             if v == value:
                 return k
 
-    def draw_triangle(self, vertex_points_layer_name):
-        list_layers = QgsProject.instance().mapLayersByName(vertex_points_layer_name)
-        layer_name = list_layers[0]
+    def draw_triangles(self, vertex_point_in, vertex_point_out):
+        def toFixed(numObj, digits=0):
+            return f"{numObj:.{digits}f}"
 
+        list_layers = QgsProject.instance().mapLayersByName(vertex_point_in)
+        layer_name = list_layers[0]
+        dict_points_in = {}
+        point_vertex = []
+        point_vertex_wrong = []
+        features = layer_name.getFeatures()
+        for feature in features:
+            geom = feature.geometry()
+            list_points = geom.asMultiPoint()
+            pointXY = [list_points[0].x(), list_points[0].y()]
+            pointXY_wrong = [toFixed(list_points[0].x(), 3), toFixed(list_points[0].y(), 3)]
+            s = str(pointXY_wrong[0]), str(pointXY_wrong[1])
+            dict_points_in[s] = feature['id']
+            point_vertex.append(pointXY)
+            point_vertex_wrong.append(pointXY_wrong)
+        
+        points = np.array(point_vertex)
+        tri = Delaunay(points)
+        triangleXY_in = points[tri.simplices]     
+        
+        points = np.array(point_vertex_wrong)
+        tri = Delaunay(points)
+        triangleXY_in_wrong = points[tri.simplices]
+
+        triangle_id = []
+        for triangle in triangleXY_in_wrong:
+            one_triangle_id = [dict_points_in[tuple(triangle[0])],
+            dict_points_in[tuple(triangle[1])],
+            dict_points_in[tuple(triangle[2])]]
+            triangle_id.append(one_triangle_id)
+
+        list_layers = QgsProject.instance().mapLayersByName(vertex_point_out)
+        layer_name = list_layers[0]
+        dict_points_out = {}
         point_vertex = []
         features = layer_name.getFeatures()
         for feature in features:
             geom = feature.geometry()
-            attr_list = feature.attributes()
             list_points = geom.asMultiPoint()
             pointXY = [list_points[0].x(), list_points[0].y()]
+            s = str(pointXY[0]), str(pointXY[1])
+            dict_points_out[feature['id']] = pointXY
             point_vertex.append(pointXY)
-        
-        points = np.array(point_vertex)
-        tri = Delaunay(points)
-        triangleXY = points[tri.simplices]
+            
+        triangleXY = []
+        for id in triangle_id:
+            triangle = [dict_points_out[id[0]], dict_points_out[id[1]], dict_points_out[id[2]]]
+            triangleXY.append(triangle)
 
+        triangleXY_out = np.array(triangleXY)
+                
         suri = "MultiPolygon?crs=epsg:20008&index=yes"
-        tr_name = "triangle" + vertex_points_layer_name
+        tr_name = "triangle" + vertex_point_in
         vl = QgsVectorLayer(suri, tr_name, "memory")
         pr = vl.dataProvider()
         vl.updateExtents()
 
         fet = QgsFeature()
-        for triangl in triangleXY:
+        for triangl in triangleXY_in:
             fet.setGeometry(QgsGeometry.fromPolygonXY([[QgsPointXY(triangl[0][0], triangl[0][1]), QgsPointXY(triangl[1][0], triangl[1][1]), QgsPointXY(triangl[2][0], triangl[2][1]), QgsPointXY(triangl[0][0], triangl[0][1])]]))
             pr.addFeatures([fet])
             vl.updateExtents()
@@ -66,7 +106,25 @@ class Moved:
         else:
             QgsProject.instance().addMapLayer(vl)
         
-        return triangleXY
+        suri = "MultiPolygon?crs=epsg:20008&index=yes"
+        tr_name = "triangle" + vertex_point_out
+        vl = QgsVectorLayer(suri, tr_name, "memory")
+        pr = vl.dataProvider()
+        vl.updateExtents()
+
+        fet = QgsFeature()
+        for triangl in triangleXY_out:
+            fet.setGeometry(QgsGeometry.fromPolygonXY([[QgsPointXY(triangl[0][0], triangl[0][1]), QgsPointXY(triangl[1][0], triangl[1][1]), QgsPointXY(triangl[2][0], triangl[2][1]), QgsPointXY(triangl[0][0], triangl[0][1])]]))
+            pr.addFeatures([fet])
+            vl.updateExtents()
+
+        vl.updateExtents()
+        if not vl.isValid():
+            print("Layer failed to load!")
+        else:
+            QgsProject.instance().addMapLayer(vl)
+
+        return triangleXY_in, triangleXY_out
 
     def barycentric_out(self, pointXY, triangle):
         pointX = pointXY[0]
@@ -109,8 +167,7 @@ class Moved:
             if layer.name().startswith("triangle") or layer.name().startswith("moved"):
                 project.removeMapLayer(layer.id())
         
-        triangleXY_in = self.draw_triangle(self.vertex_point_in)
-        triangleXY_out = self.draw_triangle(self.vertex_point_out)
+        (triangleXY_in, triangleXY_out) = self.draw_triangles(self.vertex_point_in, self.vertex_point_out)
 
         dict_triangleXY_in = {}
         count = 0
