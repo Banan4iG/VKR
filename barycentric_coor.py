@@ -301,7 +301,7 @@ class Moved:
         else:
             QgsProject.instance().addMapLayer(vl)
 
-mv = Moved("points200", "points1000", "polygons", "Polygons")
+mv = Moved("points200", "points1000", "poppol200", "Polygons")
 mv.run()
 
 #print("fields:", len(pr.fields()))
