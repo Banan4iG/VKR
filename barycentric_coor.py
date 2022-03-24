@@ -3,6 +3,7 @@ import numpy as np
 
 class Moved:
     
+    #функция инизиализации запускается при создании объекта класса Moved
     def __init__(self, vertex_point_in, vertex_point_out, move_layer, type_of_geom):
         self.vertex_point_in = vertex_point_in
         self.vertex_point_out = vertex_point_out
@@ -10,7 +11,8 @@ class Moved:
         self.type_of_geom = type_of_geom
         self.dict_points200 = {}
         self.dict_points1000 = {}
-        
+
+    #функция выполняющая проверку находится ли точка внтутри треугольника
     def is_in_triangle(self, pointXY, triangle):
         pointX = pointXY[0]
         pointY = pointXY[1]
@@ -27,16 +29,13 @@ class Moved:
             return True
         else:
             return False
-        
-    def get_key(d, value):
-        for k, v in d.items():
-            if v == value:
-                return k
 
+    #функция отрисовки треугольника
     def draw_triangles(self, vertex_point_in, vertex_point_out):
         def toFixed(numObj, digits=0):
             return f"{numObj:.{digits}f}"
 
+        #получения списка базовых точек первой карты 
         list_layers = QgsProject.instance().mapLayersByName(vertex_point_in)
         layer_name = list_layers[0]
         dict_points_in = {}
@@ -53,6 +52,7 @@ class Moved:
             point_vertex.append(pointXY)
             point_vertex_wrong.append(pointXY_wrong)
         
+        #выполнение треангуляции Делоне
         points = np.array(point_vertex)
         tri = Delaunay(points)
         triangleXY_in = points[tri.simplices]     
@@ -61,6 +61,7 @@ class Moved:
         tri = Delaunay(points)
         triangleXY_in_wrong = points[tri.simplices]
 
+        #формирование временного списка, состоящий из id точек для соответствия треугольников разных карт 
         triangle_id = []
         for triangle in triangleXY_in_wrong:
             one_triangle_id = [dict_points_in[tuple(triangle[0])],
@@ -68,6 +69,7 @@ class Moved:
             dict_points_in[tuple(triangle[2])]]
             triangle_id.append(one_triangle_id)
 
+        #получения списка базовых точек второй карты 
         list_layers = QgsProject.instance().mapLayersByName(vertex_point_out)
         layer_name = list_layers[0]
         dict_points_out = {}
@@ -80,14 +82,15 @@ class Moved:
             s = str(pointXY[0]), str(pointXY[1])
             dict_points_out[feature['id']] = pointXY
             point_vertex.append(pointXY)
-            
+  
         triangleXY = []
         for id in triangle_id:
             triangle = [dict_points_out[id[0]], dict_points_out[id[1]], dict_points_out[id[2]]]
             triangleXY.append(triangle)
 
         triangleXY_out = np.array(triangleXY)
-                
+
+        #Создание и загрузка в проект векторного слоя с тругольниками первой карты       
         suri = "MultiPolygon?crs=epsg:20008&index=yes"
         tr_name = "triangle" + vertex_point_in
         vl = QgsVectorLayer(suri, tr_name, "memory")
@@ -106,6 +109,7 @@ class Moved:
         else:
             QgsProject.instance().addMapLayer(vl)
         
+        #Создание и загрузка в проект векторного слоя с тругольниками второй карты 
         suri = "MultiPolygon?crs=epsg:20008&index=yes"
         tr_name = "triangle" + vertex_point_out
         vl = QgsVectorLayer(suri, tr_name, "memory")
@@ -126,6 +130,7 @@ class Moved:
 
         return triangleXY_in, triangleXY_out
 
+    #функция вычисления барицентрических координат точки относительно треугольника
     def barycentric_out(self, pointXY, triangle):
         pointX = pointXY[0]
         pointY = pointXY[1]
@@ -145,6 +150,7 @@ class Moved:
         coor = [u, v, w]
         return coor
 
+    #функция вычисления координат точки относительно ее бариоцентрических координат
     def barycentric_in(self, coor, triangle):
         u = coor[0]
         v = coor[1]
@@ -160,15 +166,19 @@ class Moved:
         pointXY = [pointX, pointY]
         return pointXY
     
+    #основная функция запускаемая пользователем
     def run(self):
         project = QgsProject.instance()
         
+        #удаление треугольников оставщихся после предыдущщего запуска
         for layer in project.mapLayers().values():
             if layer.name().startswith("triangle") or layer.name().startswith("moved"):
                 project.removeMapLayer(layer.id())
         
+        #получение списков и отрисовка треугольников
         (triangleXY_in, triangleXY_out) = self.draw_triangles(self.vertex_point_in, self.vertex_point_out)
 
+        #индексация треугольников
         dict_triangleXY_in = {}
         count = 0
         for tr in triangleXY_in:
@@ -184,8 +194,8 @@ class Moved:
         list_layers = project.mapLayersByName(self.move_layer)
         layer_name = list_layers[0]
         features = layer_name.getFeatures()
-        
-               
+        #получение объектов на первой карте и их построение на второй относительно геометрии    
+        #тип геометрии: точки
         if self.type_of_geom == "Points":
             points = []
             for feature in features:
@@ -216,8 +226,8 @@ class Moved:
                 pr.addFeatures([fet])
                 vl.updateExtents()
         
+        #тип геометрии: линии
         if self.type_of_geom == "Lines":
-            
             feature_XY =[]
             for feature in features:
                 points = []
@@ -256,6 +266,7 @@ class Moved:
                 pr.addFeatures([fet])
                 vl.updateExtents()
         
+        #тип геометрии: полигоны
         if self.type_of_geom == "Polygons":
             
             feature_XY =[]
@@ -296,61 +307,12 @@ class Moved:
                 pr.addFeatures([fet])
                 vl.updateExtents()
         
+        #добавление слоя на карту
         if not vl.isValid():
             print("Layer failed to load!")
         else:
             QgsProject.instance().addMapLayer(vl)
 
-mv = Moved("points200", "points1000", "poppol200", "Polygons")
+#создание объекта класса Moved: указание имён слоёв с базовыми точками двух карт и переносимых объектов, а также указание типа геометрии
+mv = Moved("points200", "points1000", "polygons", "Polygons")
 mv.run()
-
-#print("fields:", len(pr.fields()))
-#print("features:", pr.featureCount())
-#e = vl.extent()
-#print("extent:", e.xMinimum(), e.yMinimum(), e.xMaximum(), e.yMaximum())
-## iterate over features
-#features = vl.getFeatures()
-#for fet in features:
-#    print("F:", fet.geometry().asPolygon(), end = '\n')
-
-
-#crs = QgsProject.instance().crs()
-#transform_context = QgsProject.instance().transformContext()
-#save_options = QgsVectorFileWriter.SaveVectorOptions()
-#save_options.driverName = "ESRI Shapefile"
-#save_options.fileEncoding = "windows-1251"
-#
-#fields = QgsFields()
-#writer = QgsVectorFileWriter.create(
-#"E:\Никита\ИС-118\Диплом\VKR\\triangle.shp",
-#fields,
-#QgsWkbTypes.MultiPolygon,
-#crs,
-#transform_context,
-#save_options
-#)
-#
-#if writer.hasError() != QgsVectorFileWriter.NoError:
-#    print("Error when creating shapefile: ",  writer.errorMessage())
-#
-#fet = QgsFeature()
-#for triangl in triangleXY:
-#    fet.setGeometry(QgsGeometry.fromPolygonXY([[QgsPointXY(triangl[0][0], triangl[0][1]), QgsPointXY(triangl[1][0], triangl[1][1]), QgsPointXY(triangl[2][0], triangl[2][1]), QgsPointXY(triangl[0][0], triangl[0][1])]]))
-#    writer.addFeature(fet)
-#
-#del writer
-#
-#path = "E:\Никита\ИС-118\Диплом\VKR\\triangle.shp"
-#vlayer = QgsVectorLayer(path, "triangle", "ogr")
-#if not vlayer.isValid():
-#    print("Layer failed to load!")
-#else:
-#    QgsProject.instance().addMapLayer(vlayer)
-
-#areaOfInterest = QgsRectangle(450290,400520, 450750,400780)
-#QgsTriangle(QgsPoint,QgsPoint,QgsPoint)
-#request = QgsFeatureRequest().setFilterRect(areaOfInterest)
-#
-#for feature in layer.getFeatures(request):
-#     do whatever you need with the feature
-#    pass
