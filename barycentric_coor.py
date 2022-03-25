@@ -169,6 +169,17 @@ class Moved:
     #основная функция запускаемая пользователем
     def run(self):
         project = QgsProject.instance()
+        ls_1 = project.mapLayersByName(self.vertex_point_in)
+        ls_2 = project.mapLayersByName(self.vertex_point_out)
+        ls_3 = project.mapLayersByName(self.move_layer)
+        
+        if self.type_of_geom != 'Polygons' and self.type_of_geom != "Lines" and self.type_of_geom != "Points":
+            print("Указанного типа геометрии не существует или не предусмотрена обработка данного типа" + '\n' + "Доступные типы: Points, Lines, Polygons")
+            return
+        
+        if not ls_1 or not ls_2 or not ls_3:
+            print("Указанного слоя с таким именем не существует")
+            return
         
         #удаление треугольников оставщихся после предыдущщего запуска
         for layer in project.mapLayers().values():
@@ -314,5 +325,5 @@ class Moved:
             QgsProject.instance().addMapLayer(vl)
 
 #создание объекта класса Moved: указание имён слоёв с базовыми точками двух карт и переносимых объектов, а также указание типа геометрии
-mv = Moved("points200", "points1000", "polygons", "Polygons")
+mv = Moved("points200", "points1000", "poppol200", "Polygons")
 mv.run()
