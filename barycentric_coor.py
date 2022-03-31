@@ -11,6 +11,7 @@ class Moved:
         self.type_of_geom = type_of_geom
         self.dict_points200 = {}
         self.dict_points1000 = {}
+        self.coordinate_system = QgsProject.instance().crs().authid()
 
     #функция выполняющая проверку находится ли точка внтутри треугольника
     def is_in_triangle(self, pointXY, triangle):
@@ -91,7 +92,7 @@ class Moved:
         triangleXY_out = np.array(triangleXY)
 
         #Создание и загрузка в проект векторного слоя с тругольниками первой карты       
-        suri = "MultiPolygon?crs=epsg:20008&index=yes"
+        suri = "MultiPolygon?crs=" + self.coordinate_system + "&index=yes"
         tr_name = "triangle" + vertex_point_in
         vl = QgsVectorLayer(suri, tr_name, "memory")
         pr = vl.dataProvider()
@@ -110,7 +111,7 @@ class Moved:
             QgsProject.instance().addMapLayer(vl)
         
         #Создание и загрузка в проект векторного слоя с тругольниками второй карты 
-        suri = "MultiPolygon?crs=epsg:20008&index=yes"
+        suri = "MultiPolygon?crs=" + self.coordinate_system + "&index=yes"
         tr_name = "triangle" + vertex_point_out
         vl = QgsVectorLayer(suri, tr_name, "memory")
         pr = vl.dataProvider()
@@ -224,7 +225,7 @@ class Moved:
                         break
 
 
-            suri = "MultiPoint?crs=epsg:20008&index=yes"
+            suri = "MultiPoint?crs=" + self.coordinate_system + "&index=yes"
             name = "moved_layer"
             vl = QgsVectorLayer(suri, name, "memory")
             pr = vl.dataProvider()
@@ -261,7 +262,7 @@ class Moved:
                 feature_coors.append(coors)
 
 
-            suri = "MultiLineString?crs=epsg:20008&index=yes"
+            suri = "MultiLineString?crs=" + self.coordinate_system + "&index=yes"
             name = "moved_layer"
             vl = QgsVectorLayer(suri, name, "memory")
             pr = vl.dataProvider()
@@ -302,7 +303,7 @@ class Moved:
                 feature_coors.append(coors)
 
 
-            suri = "MultiPolygon?crs=epsg:20008&index=yes"
+            suri = "MultiPolygon?crs=" + self.coordinate_system + "&index=yes"
             name = "moved_layer"
             vl = QgsVectorLayer(suri, name, "memory")
             pr = vl.dataProvider()
