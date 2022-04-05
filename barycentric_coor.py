@@ -1,4 +1,5 @@
 from scipy.spatial import Delaunay
+from osgeo import gdal
 import numpy as np
 
 class Moved:
