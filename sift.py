@@ -2,17 +2,41 @@ import cv2
 import numpy as np
 from PIL import Image
 
-img_1 = np.asarray(Image.open("E:/Никита/ИС-118/Диплом/VKR/123.jpg").convert('L'))
-img_2 = np.asarray(Image.open("E:/Никита/ИС-118/Диплом/VKR/1231.jpg").convert('L'))
+img_1 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline200.tif").convert('L'))
+img_2 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline1000.tif").convert('L'))
 
 #img_1 = cv2.imread("E:/Никита/ИС-118/Диплом/VKR/rastr_admline200.png")
 #img_2 = cv2.imread("rastr_admline1000.tif")
 
+temp1 = img_1
+temp2 = img_2
+for i in range(1024):
+    for j in range(1024):
+        if img_1[i][j] == 255:
+            temp1[i][j] = 0
+        else:
+            temp1[i][j] = 255
+
+for i in range(1024):
+    for j in range(1024):
+        if img_2[i][j] == 255:
+            temp2[i][j] = 0
+        else:
+            temp2[i][j] = 255
+
+#cv2.imshow('img', temp)
+
+npKernel = np.uint8(np.ones((3, 3)))
+
+npKernel_eroded1 = cv2.erode(temp1, npKernel)
+npKernel_eroded2 = cv2.erode(temp2, npKernel)
+#cv2.imshow('img', npKernel_eroded)
+
 #Расчет функции SIFT
 sift = cv2.xfeatures2d.SIFT_create()
 
-psd_kp1, psd_des1 = sift.detectAndCompute(img_1, None)
-psd_kp2, psd_des2 = sift.detectAndCompute(img_2, None)
+psd_kp1, psd_des1 = sift.detectAndCompute(npKernel_eroded1, None)
+psd_kp2, psd_des2 = sift.detectAndCompute(npKernel_eroded2, None)
 
 # 4) Сопоставление признаков фланна
 FLANN_INDEX_KDTREE = 1
@@ -30,7 +54,7 @@ for m, n in matches:
 goodMatch = np.expand_dims(goodMatch, 1)
 print(goodMatch[:20])
 
-img_out = cv2.drawMatchesKnn(img_1, psd_kp1, img_2, psd_kp2, goodMatch[:15], None, flags=2)
+img_out = cv2.drawMatchesKnn(npKernel_eroded1, psd_kp1, npKernel_eroded2, psd_kp2, goodMatch, None, flags=2)
 
 cv2.imshow('image', img_out)# Показать картинки
 cv2.waitKey(0)# Дождитесь нажатия кнопки
