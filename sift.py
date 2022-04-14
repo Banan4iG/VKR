@@ -1,9 +1,10 @@
 import cv2
+import os
 import numpy as np
 from PIL import Image
 
-img_1 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline200.tif").convert('L'))
-img_2 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline1000.tif").convert('L'))
+img_1 = np.array(Image.open("E:/Никита/ИС-118/Диплом/VKR/rastr_admline200.tif").convert('L'))
+img_2 = np.array(Image.open("E:/Никита/ИС-118/Диплом/VKR/rastr_admline1000.tif").convert('L'))
 
 #img_1 = cv2.imread("E:/Никита/ИС-118/Диплом/VKR/rastr_admline200.png")
 #img_2 = cv2.imread("rastr_admline1000.tif")
@@ -26,7 +27,10 @@ for i in range(1024):
 
 #cv2.imshow('img', temp)
 
-npKernel = np.uint8(np.ones((3, 3)))
+npKernel = np.uint8(np.ones((5,5)))
+#for i in range(5):
+#    npKernel[2][i] = 1
+#    npKernel[i][2] = 1 
 
 npKernel_eroded1 = cv2.erode(temp1, npKernel)
 npKernel_eroded2 = cv2.erode(temp2, npKernel)
@@ -46,8 +50,10 @@ search_params = dict(checks=50)
 flann = cv2.FlannBasedMatcher(index_params, search_params)
 matches = flann.knnMatch(psd_des1, psd_des2, k=2)
 goodMatch = []
+print(matches)
 for m, n in matches:
-    # goodMatch - это отфильтрованная высококачественная пара. Если расстояние до первого совпадения в двух парах меньше 1/2 расстояния до второго совпадения, это может указывать на то, что первая пара является уникальной и неповторяющейся характерной точкой на двух изображениях. , Можно сохранить.
+    # goodMatch - это отфильтрованная высококачественная пара. 
+    #Если расстояние до первого совпадения в двух парах меньше 1/2 расстояния до второго совпадения, это может указывать на то, что первая пара является уникальной и неповторяющейся характерной точкой на двух изображениях. , Можно сохранить.
     if m.distance < 0.50*n.distance:
         goodMatch.append(m)
 # Добавить измерение
