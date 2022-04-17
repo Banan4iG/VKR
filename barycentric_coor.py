@@ -1,3 +1,4 @@
+from posixpath import split
 from scipy.spatial import Delaunay
 from osgeo import gdal
 import numpy as np
@@ -132,7 +133,7 @@ class Moved:
             print("Layer failed to load!")
         else:
             QgsProject.instance().addMapLayer(vl)
-
+        
         return triangleXY_in, triangleXY_out
 
     #функция вычисления барицентрических координат точки относительно треугольника
@@ -171,107 +172,129 @@ class Moved:
         pointXY = [pointX, pointY]
         return pointXY
     
-    def sift_create(self):
-        img_1 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline200.tif").convert('L'))
-        img_2 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline1000.tif").convert('L'))
+    # def sift_create(self):
+    #     img_1 = np.array(Image.open("E:/Никита/ИС-118/Диплом/VKR/rastr_admline200.tif").convert('L'))
+    #     img_2 = np.array(Image.open("E:/Никита/ИС-118/Диплом/VKR/rastr_admline1000.tif").convert('L'))
         
-        temp1 = img_1
-        temp2 = img_2
-        for i in range(1024):
-            for j in range(1024):
-                if img_1[i][j] == 255:
-                    temp1[i][j] = 0
-                else:
-                    temp1[i][j] = 255
+    #     temp1 = img_1
+    #     temp2 = img_2
+    #     for i in range(1024):
+    #         for j in range(1024):
+    #             if img_1[i][j] == 255:
+    #                 temp1[i][j] = 0
+    #             else:
+    #                 temp1[i][j] = 255
 
-        for i in range(1024):
-            for j in range(1024):
-                if img_2[i][j] == 255:
-                    temp2[i][j] = 0
-                else:
-                    temp2[i][j] = 255
+    #     for i in range(1024):
+    #         for j in range(1024):
+    #             if img_2[i][j] == 255:
+    #                 temp2[i][j] = 0
+    #             else:
+    #                 temp2[i][j] = 255
 
-        npKernel = np.uint8(np.zeros((5,5)))
-        for i in range(5):
-            npKernel[2][i] = 1
-            npKernel[i][2] = 1 
+    #     npKernel = np.uint8(np.zeros((5,5)))
+    #     for i in range(5):
+    #         npKernel[2][i] = 1
+    #         npKernel[i][2] = 1 
 
-        npKernel_eroded1 = cv2.erode(temp1, npKernel)
-        npKernel_eroded2 = cv2.erode(temp2, npKernel)
-        #cv2.imshow('img', npKernel_eroded)
+    #     npKernel_eroded1 = cv2.erode(temp1, npKernel)
+    #     npKernel_eroded2 = cv2.erode(temp2, npKernel)
+    #     #cv2.imshow('img', npKernel_eroded)
 
-        #Расчет функции SIFT
-        sift = cv2.xfeatures2d.SIFT_create()
+    #     #Расчет функции SIFT
+    #     sift = cv2.xfeatures2d.SIFT_create()
 
-        psd_kp1, psd_des1 = sift.detectAndCompute(npKernel_eroded1, None)
-        psd_kp2, psd_des2 = sift.detectAndCompute(npKernel_eroded2, None)
+    #     psd_kp1, psd_des1 = sift.detectAndCompute(npKernel_eroded1, None)
+    #     psd_kp2, psd_des2 = sift.detectAndCompute(npKernel_eroded2, None)
 
-        # 4) Сопоставление признаков фланна
-        FLANN_INDEX_KDTREE = 1
-        index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
-        search_params = dict(checks=50)
+    #     # 4) Сопоставление признаков фланна
+    #     FLANN_INDEX_KDTREE = 1
+    #     index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
+    #     search_params = dict(checks=50)
 
-        flann = cv2.FlannBasedMatcher(index_params, search_params)
-        matches = flann.knnMatch(psd_des1, psd_des2, k=2)
-        goodMatch = []
-        for m, n in matches:
-            # goodMatch - это отфильтрованная высококачественная пара. 
-            #Если расстояние до первого совпадения в двух парах меньше 1/2 расстояния до второго совпадения, это может указывать на то, что первая пара является уникальной и неповторяющейся характерной точкой на двух изображениях. , Можно сохранить.
-            if m.distance < 0.50*n.distance:
-                goodMatch.append(m)
-        # Добавить измерение
-        goodMatch = np.expand_dims(goodMatch, 1)
+    #     flann = cv2.FlannBasedMatcher(index_params, search_params)
+    #     matches = flann.knnMatch(psd_des1, psd_des2, k=2)
+    #     goodMatch = []
+    #     for m, n in matches:
+    #         # goodMatch - это отфильтрованная высококачественная пара. 
+    #         #Если расстояние до первого совпадения в двух парах меньше 1/2 расстояния до второго совпадения, это может указывать на то, что первая пара является уникальной и неповторяющейся характерной точкой на двух изображениях. , Можно сохранить.
+    #         if m.distance < 0.50*n.distance:
+    #             goodMatch.append(m)
+    #     # Добавить измерение
+    #     goodMatch = np.expand_dims(goodMatch, 1)
 
-        list_points200 = []
-        list_points1000 = []
-        count = 0
-        for match in goodMatch:
-            pt1 = psd_kp1[match[0].queryIdx].pt
-            pt2 = psd_kp2[match[0].trainIdx].pt
-            list_points200.append([count, (8429085.18 + pt1[0]*216.8, 6629415.28 - pt1[1]*331.8)])
-            list_points1000.append([count, (8429085.18 + pt2[0]*216.8, 6629415.28 - pt2[1]*331.8)])
+    #     list_points200 = []
+    #     list_points1000 = []
+    #     count = 0
+    #     for match in goodMatch:
+    #         pt1 = psd_kp1[match[0].queryIdx].pt
+    #         pt2 = psd_kp2[match[0].trainIdx].pt
+    #         list_points200.append([count, (8429085.18 + pt1[0]*216.8, 6629415.28 - pt1[1]*331.8)])
+    #         list_points1000.append([count, (8429085.18 + pt2[0]*216.8, 6629415.28 - pt2[1]*331.8)])
+    #         count += 1
 
-        suri = "MultiPoint?crs=" + QgsProject.instance().crs().authid() + "&index=yes"
-        tr_name = "pt200"
-        vl = QgsVectorLayer(suri, tr_name, "memory")
-        pr = vl.dataProvider()
-        pr.addAttributes([QgsField("id",  QVariant.Int)])
-        vl.updateExtents()
-        fet = QgsFeature()
-        for pt in list_points200:
-            fet.setGeometry(QgsGeometry.fromMultiPointXY([QgsPointXY(pt[1][0], pt[1][1])]))
-            fet.setAttribute(pt[0])
-            pr.addFeatures([fet])
-            vl.updateExtents()
+    #     suri = "MultiPoint?crs=" + QgsProject.instance().crs().authid() + "&index=yes"
+    #     tr_name = "pt200"
+    #     vl = QgsVectorLayer(suri, tr_name, "memory")
+    #     pr = vl.dataProvider()
+    #     pr.addAttributes([QgsField("id",  QVariant.Int)])
+    #     vl.updateFields()
+    #     vl.updateExtents()
+    #     fet = QgsFeature()
+    #     for pt in list_points200:
+    #         fet.setGeometry(QgsGeometry.fromMultiPointXY([QgsPointXY(pt[1][0], pt[1][1])]))
+    #         fet.setAttributes([pt[0]])
+    #         pr.addFeatures([fet])
+    #         vl.updateExtents()
             
-        vl.updateExtents()
-        if not vl.isValid():
-            print("Layer failed to load!")
-        else:
-            QgsProject.instance().addMapLayer(vl)
+    #     vl.updateExtents()
+    #     if not vl.isValid():
+    #         print("Layer failed to load!")
+    #     else:
+    #         QgsProject.instance().addMapLayer(vl)
 
-        suri = "MultiPoint?crs=" + QgsProject.instance().crs().authid() + "&index=yes"
-        tr_name = "pt1000"
-        vl = QgsVectorLayer(suri, tr_name, "memory")
-        pr = vl.dataProvider()
-        pr.addAttributes([QgsField("id",  QVariant.Int)])
-        vl.updateExtents()
-        fet = QgsFeature()
-        for pt in list_points1000:
-            fet.setGeometry(QgsGeometry.fromMultiPointXY([QgsPointXY(pt[0], pt[1])]))
-            fet.setAttribute(pt[0])
-            pr.addFeatures([fet])
-            vl.updateExtents()
+    #     suri = "MultiPoint?crs=" + QgsProject.instance().crs().authid() + "&index=yes"
+    #     tr_name = "pt1000"
+    #     vl = QgsVectorLayer(suri, tr_name, "memory")
+    #     pr = vl.dataProvider()
+    #     pr.addAttributes([QgsField("id",  QVariant.Int)])
+    #     vl.updateFields()
+    #     vl.updateExtents()
+    #     fet = QgsFeature()
+    #     for pt in list_points1000:
+    #         fet.setGeometry(QgsGeometry.fromMultiPointXY([QgsPointXY(pt[0], pt[1])]))
+    #         fet.setAttributes([pt[0]])
+    #         pr.addFeatures([fet])
+    #         vl.updateExtents()
             
-        vl.updateExtents()
-        if not vl.isValid():
-            print("Layer failed to load!")
-        else:
-            QgsProject.instance().addMapLayer(vl)
+    #     vl.updateExtents()
+    #     if not vl.isValid():
+    #         print("Layer failed to load!")
+    #     else:
+    #         QgsProject.instance().addMapLayer(vl)
     
+    def split_line(self, points):
+        otrs = []
+        for i in range(len(points) - 1):
+            line = [points[i], points[i+1]]
+            xm = (line[0][0] + line[1][0]) / 2
+            ym = (line[0][1] + line[1][1]) / 2
+            
+            xm1 = (line[0][0] + xm) / 2
+            ym1 = (line[0][1] + ym) / 2
+            
+            xm2 = (xm + line[1][0]) / 2
+            ym2 = (ym + line[1][1]) / 2
+
+            otrs.append([xm1, ym1])
+            otrs.append([xm, ym]) 
+            otrs.append([xm2, ym2])
+        otrs.append(points[-1])
+        return otrs
+
     #основная функция запускаемая пользователем
     def run(self):
-        self.sift_create()
+        #self.sift_create()
         project = QgsProject.instance()
         ls_1 = project.mapLayersByName(self.vertex_point_in)
         ls_2 = project.mapLayersByName(self.vertex_point_out)
@@ -321,7 +344,7 @@ class Moved:
                 points.append(pointXY)
             
             coors = []
-            for point in  points:
+            for point in points:
                 for triangle in triangleXY_in:
                     if(self.is_in_triangle(point,triangle)):
                         coors.append([dict_triangleXY_in[str(triangle)], self.barycentric_out(point, triangle)])
@@ -352,12 +375,13 @@ class Moved:
                 for point in list_points[0]:
                     pointXY = [point.x(), point.y()]
                     points.append(pointXY)
-                feature_XY.append(points)
-            
+                feature_XY.append(self.split_line(points))
+
+            #feature_XY_split = self.split_line(feature_XY)
             feature_coors = []
             for points in feature_XY:
                 coors = []
-                for point in  points:
+                for point in points:
                     for triangle in triangleXY_in:
                         if(self.is_in_triangle(point,triangle)):
                             coors.append([dict_triangleXY_in[str(triangle)], self.barycentric_out(point, triangle)])
@@ -393,12 +417,13 @@ class Moved:
                 for point in list_points[0][0]:
                     pointXY = [point.x(), point.y()]
                     points.append(pointXY)
-                feature_XY.append(points)
+                feature_XY.append(self.split_line(points))
             
+            #feature_XY_split = self.split_line(feature_XY)
             feature_coors = []
             for points in feature_XY:
                 coors = []
-                for point in  points:
+                for point in points:
                     for triangle in triangleXY_in:
                         if(self.is_in_triangle(point,triangle)):
                             coors.append([dict_triangleXY_in[str(triangle)], self.barycentric_out(point, triangle)])
@@ -429,5 +454,5 @@ class Moved:
             QgsProject.instance().addMapLayer(vl)
 
 #создание объекта класса Moved: указание имён слоёв с базовыми точками двух карт и переносимых объектов, а также указание типа геометрии
-mv = Moved("pt200", "pt1000", "polygons", "Polygons")
+mv = Moved("points200", "points1000", "polygons", "Polygons")
 mv.run()
