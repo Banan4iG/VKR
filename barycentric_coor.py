@@ -285,13 +285,35 @@ class Moved:
             
             xm2 = (xm + line[1][0]) / 2
             ym2 = (ym + line[1][1]) / 2
-
+            
+            otrs.append(points[i])
             otrs.append([xm1, ym1])
             otrs.append([xm, ym]) 
             otrs.append([xm2, ym2])
         otrs.append(points[-1])
         return otrs
-
+    
+    # def split_line(self, points, count = 2):
+    #     def dev(pt,ct):
+    #         res = []
+    #         xm = (pt[0][0] + pt[1][0]) / 2
+    #         ym = (pt[0][1] + pt[1][1]) / 2
+    #         ct -= 1
+    #         if ct > 0: 
+    #             res.append(dev( [[pt[0][0], pt[0][1]], [xm, ym] ], count))
+    #             res.append([xm, ym]) 
+    #             res.append(dev( [[xm, ym], [pt[1][0], pt[1][1]]], count))
+    #         else:
+    #             res.append([xm, ym])
+    #         return res
+    #     otrs = []
+    #     for i in range(len(points) - 1):
+    #         line = [points[i], points[i+1]]
+    #         otrs.append(points[i])
+    #         otrs += dev(line, count)
+    #     otrs.append(points[-1])
+    #     return otrs
+    
     #основная функция запускаемая пользователем
     def run(self):
         #self.sift_create()
