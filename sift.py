@@ -58,50 +58,50 @@ for m, n in matches:
 # Добавить измерение
 goodMatch = np.expand_dims(goodMatch, 1)
 
-list_points200 = []
-list_points1000 = []
-for match in goodMatch:
-    pt1 = psd_kp1[match[0].queryIdx].pt
-    pt2 = psd_kp2[match[0].trainIdx].pt
-    list_points200.append((8429085.18 + pt1[0]*216.8, 6629415.28 - pt1[1]*331.8))
-    list_points1000.append((8429085.18 + pt2[0]*216.8, 6629415.28 - pt2[1]*331.8))
-
-suri = "MultiPoint?crs=" + QgsProject.instance().crs().authid() + "&index=yes"
-tr_name = "pt200"
-vl = QgsVectorLayer(suri, tr_name, "memory")
-pr = vl.dataProvider()
-vl.updateExtents()
-for pt in list_points200:
-    fet = QgsFeature()
-    fet.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(pt[0], pt[1])))
-    pr.addFeatures([fet])
-    vl.updateExtents()
-    
-vl.updateExtents()
-if not vl.isValid():
-    print("Layer failed to load!")
-else:
-    QgsProject.instance().addMapLayer(vl)
-
-suri = "MultiPoint?crs=" + QgsProject.instance().crs().authid() + "&index=yes"
-tr_name = "pt1000"
-vl = QgsVectorLayer(suri, tr_name, "memory")
-pr = vl.dataProvider()
-vl.updateExtents()
-for pt in list_points1000:
-    fet = QgsFeature()
-    fet.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(pt[0], pt[1])))
-    pr.addFeatures([fet])
-    vl.updateExtents()
-    
-vl.updateExtents()
-if not vl.isValid():
-    print("Layer failed to load!")
-else:
-    QgsProject.instance().addMapLayer(vl)
-
-#img_out = cv2.drawMatchesKnn(npKernel_eroded1, psd_kp1, npKernel_eroded2, psd_kp2, goodMatch, None, flags=2)
+#list_points200 = []
+#list_points1000 = []
+#for match in goodMatch:
+#    pt1 = psd_kp1[match[0].queryIdx].pt
+#    pt2 = psd_kp2[match[0].trainIdx].pt
+#    list_points200.append((8429085.18 + pt1[0]*216.8, 6629415.28 - pt1[1]*331.8))
+#    list_points1000.append((8429085.18 + pt2[0]*216.8, 6629415.28 - pt2[1]*331.8))
 #
-#cv2.imshow('image', img_out)# Показать картинки
-#cv2.waitKey(0)# Дождитесь нажатия кнопки
-#cv2.destroyAllWindows()# Очистить все окна
+#suri = "MultiPoint?crs=" + QgsProject.instance().crs().authid() + "&index=yes"
+#tr_name = "pt200"
+#vl = QgsVectorLayer(suri, tr_name, "memory")
+#pr = vl.dataProvider()
+#vl.updateExtents()
+#for pt in list_points200:
+#    fet = QgsFeature()
+#    fet.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(pt[0], pt[1])))
+#    pr.addFeatures([fet])
+#    vl.updateExtents()
+#    
+#vl.updateExtents()
+#if not vl.isValid():
+#    print("Layer failed to load!")
+#else:
+#    QgsProject.instance().addMapLayer(vl)
+#
+#suri = "MultiPoint?crs=" + QgsProject.instance().crs().authid() + "&index=yes"
+#tr_name = "pt1000"
+#vl = QgsVectorLayer(suri, tr_name, "memory")
+#pr = vl.dataProvider()
+#vl.updateExtents()
+#for pt in list_points1000:
+#    fet = QgsFeature()
+#    fet.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(pt[0], pt[1])))
+#    pr.addFeatures([fet])
+#    vl.updateExtents()
+#    
+#vl.updateExtents()
+#if not vl.isValid():
+#    print("Layer failed to load!")
+#else:
+#    QgsProject.instance().addMapLayer(vl)
+
+img_out = cv2.drawMatchesKnn(npKernel_eroded1, psd_kp1, npKernel_eroded2, psd_kp2, goodMatch, None, flags=2)
+
+cv2.imshow('image', img_out)# Показать картинки
+cv2.waitKey(0)# Дождитесь нажатия кнопки
+cv2.destroyAllWindows()# Очистить все окна
