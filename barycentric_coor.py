@@ -1,3 +1,4 @@
+#from indexing_of_elements import Index_of_element
 from posixpath import split
 from random import triangular
 from scipy.spatial import Delaunay
@@ -10,9 +11,9 @@ from PIL import Image
 class Moved:
     
     #функция инизиализации запускается при создании объекта класса Moved
-    def __init__(self, vertex_point_in, vertex_point_out, move_layer, type_of_geom):
-        self.vertex_point_in = vertex_point_in
-        self.vertex_point_out = vertex_point_out
+    def __init__(self, move_layer, type_of_geom):
+        self.vertex_point_in = "pt200"
+        self.vertex_point_out = "pt1000"
         self.move_layer = move_layer
         self.type_of_geom = type_of_geom
         self.dict_points200 = {}
@@ -158,9 +159,7 @@ class Moved:
             print("Layer failed to load!")
         else:
             QgsProject.instance().addMapLayer(vl)
-        
-
-               
+              
         return triangleXY_in, triangleXY_out
 
     #функция вычисления барицентрических координат точки относительно треугольника
@@ -185,9 +184,7 @@ class Moved:
 
     #функция вычисления координат точки относительно ее бариоцентрических координат
     def barycentric_in(self, coor, triangle):
-        u = coor[0]
-        v = coor[1]
-        w = coor[2]
+        (u, v, w) = coor
         point1X = triangle[0][0]
         point1Y = triangle[0][1]
         point2X = triangle[1][0]
@@ -200,9 +197,17 @@ class Moved:
         return pointXY
     
     def sift_create(self):
+        def get_extent(lname: str) -> dict:
+            print(lname)
+            extent200 = QgsProject.instance().mapLayersByName(lname)[0].dataProvider().extent()
+            return dict(x_min=extent200.xMinimum(), x_max=extent200.xMaximum(), 
+                        y_min=extent200.yMinimum(), y_max=extent200.yMaximum())
+             
         img_1 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline200.tif").convert('L'))
         img_2 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline1000.tif").convert('L'))
-        
+
+        #img_1 = np.where(img_1==255, 0, 255)
+
         temp1 = img_1
         temp2 = img_2
         for i in range(1024):
@@ -252,13 +257,33 @@ class Moved:
 
         list_points200 = []
         list_points1000 = []
+        
+        extent200 = get_extent("admlin200")
+        extent1000 = get_extent("admlin1000")
+        cfx_200 = (extent200["x_max"] - extent200["x_min"]) / 1024.0
+        cfy_200 = (extent200["y_max"] - extent200["y_min"]) / 1024.0
+
+        cfx_1000 = (extent1000["x_max"] - extent1000["x_min"]) / 1024.0
+        cfy_1000 = (extent1000["y_max"] - extent1000["y_min"]) / 1024.0
+        
         count = 0
         for match in goodMatch:
             pt1 = psd_kp1[match[0].queryIdx].pt
             pt2 = psd_kp2[match[0].trainIdx].pt
-            list_points200.append([count, (8429085.18 + pt1[0]*216.8, 6629415.28 - pt1[1]*331.8)])
-            list_points1000.append([count, (8429085.18 + pt2[0]*216.8, 6629415.28 - pt2[1]*331.8)])
+            list_points200.append([count, (extent200["x_min"] + pt1[0]*cfx_200, extent200["y_max"] - pt1[1]*cfy_200)])
+            list_points1000.append([count, (extent1000["x_min"]  + pt2[0]*cfx_1000, extent1000["y_max"] - pt2[1]*cfy_1000)])
             count += 1
+        list_points200.append([count, (extent200["x_min"], extent200["y_min"])])
+        list_points1000.append([count, (extent1000["x_min"], extent1000["y_min"])])
+        count += 1
+        list_points200.append([count, (extent200["x_min"], extent200["y_max"])])
+        list_points1000.append([count, (extent1000["x_min"], extent1000["y_max"])])
+        count += 1
+        list_points200.append([count, (extent200["x_max"], extent200["y_min"])])
+        list_points1000.append([count, (extent1000["x_max"], extent1000["y_min"])])
+        count += 1
+        list_points200.append([count, (extent200["x_max"], extent200["y_max"])])
+        list_points1000.append([count, (extent1000["x_max"], extent1000["y_max"])])  
 
         suri = "MultiPoint?crs=" + QgsProject.instance().crs().authid() + "&index=yes"
         tr_name = "pt200"
@@ -344,8 +369,14 @@ class Moved:
     #основная функция запускаемая пользователем
     
     def run(self):
-        self.sift_create()
         project = QgsProject.instance()
+        #удаление слоёв
+        for layer in project.mapLayers().values():
+            if layer.name().startswith("triangle") or layer.name().startswith("moved") or layer.name().startswith("pt"):
+                project.removeMapLayer(layer.id())
+        
+        self.sift_create()
+        
         ls_1 = project.mapLayersByName(self.vertex_point_in)
         ls_2 = project.mapLayersByName(self.vertex_point_out)
         ls_3 = project.mapLayersByName(self.move_layer)
@@ -358,10 +389,8 @@ class Moved:
             print("Указанного слоя с таким именем не существует")
             return
         
-        #удаление треугольников оставщихся после предыдущщего запуска
-        for layer in project.mapLayers().values():
-            if layer.name().startswith("triangle") or layer.name().startswith("moved"):
-                project.removeMapLayer(layer.id())
+        
+        
         
         #получение списков и отрисовка треугольников
         (triangleXY_in, triangleXY_out) = self.draw_triangles(self.vertex_point_in, self.vertex_point_out)
@@ -506,5 +535,5 @@ class Moved:
             QgsProject.instance().addMapLayer(vl)
 
 #создание объекта класса Moved: указание имён слоёв с базовыми точками двух карт и переносимых объектов, а также указание типа геометрии
-mv = Moved("pt200", "pt1000", "poppol200", "Polygons")
+mv = Moved("polygons", "Polygons")
 mv.run()
