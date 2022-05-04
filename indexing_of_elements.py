@@ -2,105 +2,36 @@ import random
 
 class Index_of_element(object):
 
-    def __init__(self):
+    def __init__(self, layers_name):
 
         self.project = QgsProject.instance()
         self.del_temp_layers()
-        self.layers_name = [layer.name() for layer in QgsProject.instance().mapLayers().values()]
+        self.layers_name = layers_name
         self.list_number_rect = []
         self.numbers_seperation_rects = []
+        self.coordinate_system = self.project.crs().authid()
 
     # Получение эксремумов главного прямоугольника
     def get_points_main_rectangle(self):
-        top = QgsPointXY(0,-100)
-        left = QgsPointXY(100,0)
-        down = QgsPointXY(0,100)
-        right = QgsPointXY(-100,0)
-        # Цикл по всем слоям
-        for current_layer in self.layers_name:
-            layer = self.project.mapLayersByName(current_layer)
-            features = layer[0].getFeatures()
-            for feature in features:
-                geom = feature.geometry()
-                # Получение типа геометрии
-                geomSingleType = QgsWkbTypes.isSingleType(geom.wkbType())
-                if geom.type() == QgsWkbTypes.PointGeometry:
-                    if geomSingleType:
-                        if(left.x() > geom.asPoint().x()):
-                            left = geom.asPoint()
-                        if(right.x() < geom.asPoint().x()):
-                            right = geom.asPoint()
-                        if(top.y() < geom.asPoint().y()):
-                            top = geom.asPoint()
-                        if(down.y() > geom.asPoint().y()):
-                            down = geom.asPoint()
-                    else:
-                        if(left.x() > geom.asMultiPoint()[0].x()):
-                            left = geom.asMultiPoint()[0]
-                        if(right.x() < geom.asMultiPoint()[0].x()):
-                            right = geom.asMultiPoint()[0]
-                        if(top.y() < geom.asMultiPoint()[0].y()):
-                            top = geom.asMultiPoint()[0]
-                        if(down.y() > geom.asMultiPoint()[0].y()):
-                            down = geom.asMultiPoint()[0]
-                elif geom.type() == QgsWkbTypes.LineGeometry:
-                    if geomSingleType:
-                        if(left.x() > geom.asPolyline().x()):
-                            left = geom.asPolyline()
-                        if(right.x() < geom.asPolyline().x()):
-                            right = geom.asPolyline()
-                        if(top.y() < geom.asPolyline().y()):
-                            top = geom.asPolyline()
-                        if(down.y() > geom.asPolyline().y()):
-                            down = geom.asPolyline()
-                    else:
-                        multyPolyLines = geom.asMultiPolyline()[0]
-                        for first_point in multyPolyLines:
-                            if(left.x() > first_point.x()):
-                                left = first_point
-                            if(right.x() < first_point.x()):
-                                right = first_point
-                            if(top.y() < first_point.y()):
-                                top = first_point
-                            if(down.y() > first_point.y()):
-                                down = first_point
-                elif geom.type() == QgsWkbTypes.PolygonGeometry:
-                    if geomSingleType:
-                        poligons = geom.asPolygon()[0][0]
-                        for first_point in poligons:
-                            if(left.x() > first_point.x()):
-                                left = first_point
-                            if(right.x() < first_point.x()):
-                                right = first_point
-                            if(top.y() < first_point.y()):
-                                top = first_point
-                            if(down.y() > first_point.y()):
-                                down = first_point
-                    else:
-                        poligons = geom.asMultiPolygon()[0][0]
-                        for first_point in poligons:
-                            if(left.x() > first_point.x()):
-                                left = first_point
-                            if(right.x() < first_point.x()):
-                                right = first_point
-                            if(top.y() < first_point.y()):
-                                top = first_point
-                            if(down.y() > first_point.y()):
-                                down = first_point
-                else:
-                    print("Неизвестный или неверный тип геометрии",current_layer, feature.id())
-                
-        left_top = QgsPointXY(left.x(), top.y())
-        right_top = QgsPointXY(right.x(), top.y())
-        right_down = QgsPointXY(right.x(), down.y())
-        left_down = QgsPointXY(left.x(), down.y())
+        def get_extent(lname: str) -> dict:
+            extent200 = self.project.mapLayersByName(lname)[0].dataProvider().extent()
+            return dict(x_min=extent200.xMinimum(), x_max=extent200.xMaximum(), 
+                        y_min=extent200.yMinimum(), y_max=extent200.yMaximum())
+        
+        extent = get_extent("admlin1000")
+                        
+        left_top = QgsPointXY(extent["x_min"], extent["y_max"])
+        right_top = QgsPointXY(extent["x_max"], extent["y_max"])
+        right_down = QgsPointXY(extent["x_max"], extent["y_min"])
+        left_down = QgsPointXY(extent["x_min"], extent["y_min"])
         
         return [left_top,right_top, right_down, left_down]
 
 
     # Создание временного слоя
     def add_temporary_layer(self):
-        vector_layer = QgsVectorLayer("MultiPolygon", "rectangle", "memory")#MultiLineString
+        suri = "MultiPolygon?crs=" + self.coordinate_system + "&index=yes"
+        vector_layer = QgsVectorLayer(suri, "rectangle", "memory")#MultiLineString
         pr = vector_layer.dataProvider()
         #vector_layer.setStyleSheet("background: black;")
         vector_layer.updateExtents()
@@ -148,7 +79,8 @@ class Index_of_element(object):
                 new_number_rect = name_layer.split("_")[1] + "." + str(i)
             else:
                 new_number_rect = str(i)
-            vl = QgsVectorLayer("MultiPolygon", "rectangle_" + new_number_rect, "memory")
+            suri = "MultiPolygon?crs=" + self.coordinate_system + "&index=yes"
+            vl = QgsVectorLayer(suri, "rectangle_" + new_number_rect, "memory")
             if(len(new_number_rect.split(".")) < 15):
                 self.list_number_rect.append(new_number_rect)
             pr = vl.dataProvider()
@@ -253,12 +185,10 @@ class Index_of_element(object):
     def fill_index(self):
         total_list = []
         layers_rect_name = []
-        layers_main_name = []
+        layers_main_name = self.layers_name 
         for current_layer in [layer.name() for layer in QgsProject.instance().mapLayers().values()]:
             if "rectangle_" in current_layer:
                 layers_rect_name.append(current_layer)
-            else:
-                layers_main_name.append(current_layer)
 
         for current_layer in layers_main_name:
             feats = self.project.mapLayersByName(current_layer)[0].getFeatures()
@@ -344,7 +274,38 @@ class Index_of_element(object):
                 layer = self.project.mapLayersByName(current_layer)[0]
                 self.project.removeMapLayer(layer.id())
 
+    def find_cross(self, indexes):
+        class Index:
+            def __init__(self, layer_name, id_f, str_indexes):
+                self.layer_name = layer_name
+                self.id_f = id_f
+                list_of_indexes = str_indexes.split(";")
+                list_of_indexes.pop()
+                self.list_of_indexes = list_of_indexes
+        
+        list_of_classes_index = []
+        for index in indexes:
+            data = index.split("_")
+            list_of_classes_index.append(Index(data[0], data[1], data[2]))
+        
+        split_list_of_classes_index = []
+        for layer_name in self.layers_name:
+            list_indexes = []
+            for index in list_of_classes_index:
+                if index.layer_name == layer_name:
+                    list_indexes.append(index)
+            split_list_of_classes_index.append(list_indexes)
 
-#obj = Index_of_element()
-#indexes = obj.run()
-#obj.set_color_rects(indexes)
+        
+        for i in range(len(split_list_of_classes_index) - 1):
+            for el1 in split_list_of_classes_index[i]:
+                for el2 in split_list_of_classes_index[-1]:
+                    c = list(set(el1.list_of_indexes) & set(el2.list_of_indexes))
+                    if c:
+                        print(el2.layer_name, el2.id_f)
+
+
+obj = Index_of_element(["admlin200", "movedLayer"])
+indexes = obj.run()
+obj.set_color_rects(indexes)
+obj.find_cross(indexes)

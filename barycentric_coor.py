@@ -203,9 +203,10 @@ class Moved:
             return dict(x_min=extent200.xMinimum(), x_max=extent200.xMaximum(), 
                         y_min=extent200.yMinimum(), y_max=extent200.yMaximum())
              
-        img_1 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline200.tif").convert('L'))
-        img_2 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline1000.tif").convert('L'))
-
+        # img_1 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline200.tif").convert('L'))
+        # img_2 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline1000.tif").convert('L'))
+        img_1 = np.array(Image.open("E:/Никита/ИС-118/Диплом/VKR/rastr_admline200.tif").convert('L'))
+        img_2 = np.array(Image.open("E:/Никита/ИС-118/Диплом/VKR/rastr_admline1000.tif").convert('L'))
         #img_1 = np.where(img_1==255, 0, 255)
 
         temp1 = img_1
@@ -431,7 +432,7 @@ class Moved:
 
 
             suri = "MultiPoint?crs=" + self.coordinate_system + "&index=yes"
-            name = "moved_layer"
+            name = "movedLayer"
             vl = QgsVectorLayer(suri, name, "memory")
             pr = vl.dataProvider()
             vl.updateExtents()
@@ -470,7 +471,7 @@ class Moved:
 
 
             suri = "MultiLineString?crs=" + self.coordinate_system + "&index=yes"
-            name = "moved_layer"
+            name = "movedLayer"
             vl = QgsVectorLayer(suri, name, "memory")
             pr = vl.dataProvider()
             vl.updateExtents()
@@ -513,7 +514,7 @@ class Moved:
 
 
             suri = "MultiPolygon?crs=" + self.coordinate_system + "&index=yes"
-            name = "moved_layer"
+            name = "movedLayer"
             vl = QgsVectorLayer(suri, name, "memory")
             pr = vl.dataProvider()
             vl.updateExtents()
