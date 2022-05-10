@@ -11,11 +11,11 @@ from PIL import Image
 class Moved:
     
     #функция инизиализации запускается при создании объекта класса Moved
-    def __init__(self, move_layer, type_of_geom):
+    def __init__(self, move_layer):
         self.vertex_point_in = "pt200"
         self.vertex_point_out = "pt1000"
         self.move_layer = move_layer
-        self.type_of_geom = type_of_geom
+        self.type_of_geom = QgsProject.instance().mapLayersByName("polygons")[0].geometryType()
         self.dict_points200 = {}
         self.dict_points1000 = {}
         self.coordinate_system = QgsProject.instance().crs().authid()
@@ -203,10 +203,10 @@ class Moved:
             return dict(x_min=extent200.xMinimum(), x_max=extent200.xMaximum(), 
                         y_min=extent200.yMinimum(), y_max=extent200.yMaximum())
              
-        # img_1 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline200.tif").convert('L'))
-        # img_2 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline1000.tif").convert('L'))
-        img_1 = np.array(Image.open("E:/Никита/ИС-118/Диплом/VKR/rastr_admline200.tif").convert('L'))
-        img_2 = np.array(Image.open("E:/Никита/ИС-118/Диплом/VKR/rastr_admline1000.tif").convert('L'))
+        img_1 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline200.tif").convert('L'))
+        img_2 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline1000.tif").convert('L'))
+#        img_1 = np.array(Image.open("E:/Никита/ИС-118/Диплом/VKR/rastr_admline200.tif").convert('L'))
+#        img_2 = np.array(Image.open("E:/Никита/ИС-118/Диплом/VKR/rastr_admline1000.tif").convert('L'))
         #img_1 = np.where(img_1==255, 0, 255)
 
         temp1 = img_1
@@ -381,11 +381,7 @@ class Moved:
         ls_1 = project.mapLayersByName(self.vertex_point_in)
         ls_2 = project.mapLayersByName(self.vertex_point_out)
         ls_3 = project.mapLayersByName(self.move_layer)
-        
-        if self.type_of_geom != 'Polygons' and self.type_of_geom != "Lines" and self.type_of_geom != "Points":
-            print("Указанного типа геометрии не существует или не предусмотрена обработка данного типа" + '\n' + "Доступные типы: Points, Lines, Polygons")
-            return
-        
+                      
         if not ls_1 or not ls_2 or not ls_3:
             print("Указанного слоя с таким именем не существует")
             return
@@ -414,7 +410,7 @@ class Moved:
         features = layer_name.getFeatures()
         #получение объектов на первой карте и их построение на второй относительно геометрии    
         #тип геометрии: точки
-        if self.type_of_geom == "Points":
+        if self.type_of_geom == 0:
             points = []
             for feature in features:
                 geom = feature.geometry()
@@ -445,7 +441,7 @@ class Moved:
                 vl.updateExtents()
         
         #тип геометрии: линии
-        if self.type_of_geom == "Lines":
+        if self.type_of_geom == 1:
             feature_XY =[]
             for feature in features:
                 points = []
@@ -487,7 +483,7 @@ class Moved:
                 vl.updateExtents()
         
         #тип геометрии: полигоны
-        if self.type_of_geom == "Polygons":
+        if self.type_of_geom == 2:
             
             feature_XY =[]
             for feature in features:
@@ -536,5 +532,5 @@ class Moved:
             QgsProject.instance().addMapLayer(vl)
 
 #создание объекта класса Moved: указание имён слоёв с базовыми точками двух карт и переносимых объектов, а также указание типа геометрии
-mv = Moved("polygons", "Polygons")
+mv = Moved("polygons")
 mv.run()

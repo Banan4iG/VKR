@@ -7,6 +7,7 @@ class Index_of_element(object):
         self.project = QgsProject.instance()
         self.del_temp_layers()
         self.layers_name = layers_name
+        self.layers_name.append("movedLayer")
         self.list_number_rect = []
         self.numbers_seperation_rects = []
         self.coordinate_system = self.project.crs().authid()
@@ -221,6 +222,7 @@ class Index_of_element(object):
     # Установка цвета прямоугольнико для каждого объекта
     def set_color_rects(self, list_indexs):
         for obj in list_indexs:
+            print(obj)
             name_layer = obj.split("_")[0]
             id_feature = obj.split("_")[1]
             list_number_rects = obj.split("_")[2]
@@ -302,10 +304,14 @@ class Index_of_element(object):
                 for el2 in split_list_of_classes_index[-1]:
                     c = list(set(el1.list_of_indexes) & set(el2.list_of_indexes))
                     if c:
+                        print(el1.list_of_indexes)
+                        print(el2.list_of_indexes)
+                        print(el1.layer_name, el1.id_f)
+                        print(c)
                         print(el2.layer_name, el2.id_f)
 
 
-obj = Index_of_element(["admlin200", "movedLayer"])
+obj = Index_of_element(["admlin1000"])
 indexes = obj.run()
 obj.set_color_rects(indexes)
 obj.find_cross(indexes)
