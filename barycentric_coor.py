@@ -12,10 +12,10 @@ class Moved:
     
     #функция инизиализации запускается при создании объекта класса Moved
     def __init__(self, move_layer):
-        self.vertex_point_in = "pt200"
-        self.vertex_point_out = "pt1000"
+        self.vertex_point_in = "ptI"
+        self.vertex_point_out = "ptII"
         self.move_layer = move_layer
-        self.type_of_geom = QgsProject.instance().mapLayersByName("polygons")[0].geometryType()
+        self.type_of_geom = QgsProject.instance().mapLayersByName(move_layer)[0].geometryType()
         self.dict_points200 = {}
         self.dict_points1000 = {}
         self.coordinate_system = QgsProject.instance().crs().authid()
@@ -373,10 +373,10 @@ class Moved:
         project = QgsProject.instance()
         #удаление слоёв
         for layer in project.mapLayers().values():
-            if layer.name().startswith("triangle") or layer.name().startswith("moved") or layer.name().startswith("pt"):
+            if layer.name().startswith("triangle") or layer.name().startswith("moved"): #or layer.name().startswith("pt"):
                 project.removeMapLayer(layer.id())
         
-        self.sift_create()
+        #self.sift_create()
         
         ls_1 = project.mapLayersByName(self.vertex_point_in)
         ls_2 = project.mapLayersByName(self.vertex_point_out)
@@ -385,8 +385,6 @@ class Moved:
         if not ls_1 or not ls_2 or not ls_3:
             print("Указанного слоя с таким именем не существует")
             return
-        
-        
         
         
         #получение списков и отрисовка треугольников
@@ -532,5 +530,5 @@ class Moved:
             QgsProject.instance().addMapLayer(vl)
 
 #создание объекта класса Moved: указание имён слоёв с базовыми точками двух карт и переносимых объектов, а также указание типа геометрии
-mv = Moved("polygons")
+mv = Moved("home_one")
 mv.run()

@@ -7,7 +7,7 @@ class Index_of_element(object):
         self.project = QgsProject.instance()
         self.del_temp_layers()
         self.layers_name = layers_name
-        self.layers_name.append("movedLayer")
+        self.layers_name.append("homeOne")
         self.list_number_rect = []
         self.numbers_seperation_rects = []
         self.coordinate_system = self.project.crs().authid()
@@ -19,7 +19,7 @@ class Index_of_element(object):
             return dict(x_min=extent200.xMinimum(), x_max=extent200.xMaximum(), 
                         y_min=extent200.yMinimum(), y_max=extent200.yMaximum())
         
-        extent = get_extent("admlin1000")
+        extent = get_extent("lakeI")
                         
         left_top = QgsPointXY(extent["x_min"], extent["y_max"])
         right_top = QgsPointXY(extent["x_max"], extent["y_max"])
@@ -311,7 +311,7 @@ class Index_of_element(object):
                         print(el2.layer_name, el2.id_f)
 
 
-obj = Index_of_element(["admlin1000"])
+obj = Index_of_element(["lakeI"])
 indexes = obj.run()
 obj.set_color_rects(indexes)
 obj.find_cross(indexes)
