@@ -530,5 +530,5 @@ class Moved:
             QgsProject.instance().addMapLayer(vl)
 
 #создание объекта класса Moved: указание имён слоёв с базовыми точками двух карт и переносимых объектов, а также указание типа геометрии
-mv = Moved("home_one")
+mv = Moved("homeOne")
 mv.run()

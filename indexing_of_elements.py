@@ -1,3 +1,4 @@
+from pyexpat import features
 import random
 
 class Index_of_element(object):
@@ -7,7 +8,7 @@ class Index_of_element(object):
         self.project = QgsProject.instance()
         self.del_temp_layers()
         self.layers_name = layers_name
-        self.layers_name.append("homeOne")
+        self.layers_name.append("movedLayer")
         self.list_number_rect = []
         self.numbers_seperation_rects = []
         self.coordinate_system = self.project.crs().authid()
@@ -19,7 +20,7 @@ class Index_of_element(object):
             return dict(x_min=extent200.xMinimum(), x_max=extent200.xMaximum(), 
                         y_min=extent200.yMinimum(), y_max=extent200.yMaximum())
         
-        extent = get_extent("lakeI")
+        extent = get_extent("lakeII")
                         
         left_top = QgsPointXY(extent["x_min"], extent["y_max"])
         right_top = QgsPointXY(extent["x_max"], extent["y_max"])
@@ -276,7 +277,7 @@ class Index_of_element(object):
                 layer = self.project.mapLayersByName(current_layer)[0]
                 self.project.removeMapLayer(layer.id())
 
-    def find_cross(self, indexes):
+    def fix_cross(self, indexes):
         class Index:
             def __init__(self, layer_name, id_f, str_indexes):
                 self.layer_name = layer_name
@@ -285,6 +286,18 @@ class Index_of_element(object):
                 list_of_indexes.pop()
                 self.list_of_indexes = list_of_indexes
         
+        def cross_point(line1, line2):
+            x0 = line1(0).x()
+            y0 = line1(0).y()
+            x1 = line1(1).x()
+            y2 = line1(1).y()
+            x3 = line2(0).x()
+            y3 = line2(0).y()
+            x4 = line2(1).x()
+            y4 = line2(1).y()
+            return cross_point
+
+
         list_of_classes_index = []
         for index in indexes:
             data = index.split("_")
@@ -298,20 +311,33 @@ class Index_of_element(object):
                     list_indexes.append(index)
             split_list_of_classes_index.append(list_indexes)
 
-        
+        list_crossing_object = []
         for i in range(len(split_list_of_classes_index) - 1):
             for el1 in split_list_of_classes_index[i]:
                 for el2 in split_list_of_classes_index[-1]:
-                    c = list(set(el1.list_of_indexes) & set(el2.list_of_indexes))
-                    if c:
-                        print(el1.list_of_indexes)
-                        print(el2.list_of_indexes)
-                        print(el1.layer_name, el1.id_f)
-                        print(c)
-                        print(el2.layer_name, el2.id_f)
+                    cross = list(set(el1.list_of_indexes) & set(el2.list_of_indexes))
+                    if cross:
+                        list_crossing_object.append((el1, el2))
+        
+        for (el1, el2) in list_crossing_object:
+            layer1_name = self.project.mapLayersByName(el1.layer_name)[0]
+            layer2_name = self.project.mapLayersByName(el2.layer_name)[0]
+            feature1 = layer1_name.getFeature(int(el1.id_f))
+            feature2 = layer2_name.getFeature(int(el2.id_f))
+
+            list_points1 = feature1.geometry().asMultiPolygon()[0][0]
+            list_points2 = feature1.geometry().asMultiPolygon()[0][0]
+            for i in range(len(list_points1) - 1):
+                line1 = (list_points1[i], list_points1[i + 1])
+                for i in range(len(list_points2) - 1):
+                    line2 = (list_points2[i], list_points2[i + 1])
+
+            
 
 
-obj = Index_of_element(["lakeI"])
+
+
+obj = Index_of_element(["lakeII"])
 indexes = obj.run()
 obj.set_color_rects(indexes)
-obj.find_cross(indexes)
+obj.fix_cross(indexes)
