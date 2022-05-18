@@ -223,7 +223,6 @@ class Index_of_element(object):
     # Установка цвета прямоугольнико для каждого объекта
     def set_color_rects(self, list_indexs):
         for obj in list_indexs:
-            print(obj)
             name_layer = obj.split("_")[0]
             id_feature = obj.split("_")[1]
             list_number_rects = obj.split("_")[2]
@@ -287,16 +286,41 @@ class Index_of_element(object):
                 self.list_of_indexes = list_of_indexes
         
         def cross_point(line1, line2):
-            x0 = line1(0).x()
-            y0 = line1(0).y()
-            x1 = line1(1).x()
-            y2 = line1(1).y()
-            x3 = line2(0).x()
-            y3 = line2(0).y()
-            x4 = line2(1).x()
-            y4 = line2(1).y()
+            x1 = line1[0].x()
+            y1 = line1[0].y()
+            x2 = line1[1].x()
+            y2 = line1[1].y()
+            x3 = line2[0].x()
+            y3 = line2[0].y()
+            x4 = line2[1].x()
+            y4 = line2[1].y()
+            k1 = (y1 - y2) / (x1 - x2)
+            b1 = (x2 * y1 - x1 * y2) / (x2 - x1)
+            k2 = (y3 - y4) / (x3 - x4)
+            b2 = (x4 * y3 - x3 * y4) / (x4 - x3)
+            if k1 != k2:
+                x = (b2 - b1) / (k1 - k2)
+                y = (k2 * b1 - k1 * b2) / (k2 - k1)
+                if (min(x1, x2) <= x <= max(x1, x2)) and (min(x3, x4) <= x <= max(x3, x4)) and (min(y1, y2) <= y <= max(y1, y2)) and (min(y3, y4) <= y <= max(y3, y4)):
+                    cross_point = QgsPointXY(x,y)
+                else:
+                    cross_point = 0
+            else:
+                cross_point = 0
             return cross_point
 
+        def split_line(line):
+            x1 = line[0].x()
+            y1 = line[0].y()
+            x2 = line[1].x()
+            y2 = line[1].y()
+            xm = (x1 + x2) / 2.0
+            ym = (y1 + y2) / 2.0
+            return QgsPointXY(xm, ym)
+
+        def is_in_obj(point, obj):
+            
+            return true
 
         list_of_classes_index = []
         for index in indexes:
@@ -319,6 +343,8 @@ class Index_of_element(object):
                     if cross:
                         list_crossing_object.append((el1, el2))
         
+        list_cross_point = []
+
         for (el1, el2) in list_crossing_object:
             layer1_name = self.project.mapLayersByName(el1.layer_name)[0]
             layer2_name = self.project.mapLayersByName(el2.layer_name)[0]
@@ -326,11 +352,37 @@ class Index_of_element(object):
             feature2 = layer2_name.getFeature(int(el2.id_f))
 
             list_points1 = feature1.geometry().asMultiPolygon()[0][0]
-            list_points2 = feature1.geometry().asMultiPolygon()[0][0]
+            list_points2 = feature2.geometry().asPolygon()[0]
             for i in range(len(list_points1) - 1):
                 line1 = (list_points1[i], list_points1[i + 1])
                 for i in range(len(list_points2) - 1):
                     line2 = (list_points2[i], list_points2[i + 1])
+                    cross_pt = cross_point(line1, line2)
+                    if cross_pt != 0:
+                        moved_pt = split_line((line1[0],cross_pt))
+                        if is_in_obj(moved_pt, list_points2):
+                            moved_pt = split_line((cross_pt, line1[1]))
+
+
+                        
+
+        # suri = "MultiPoint?crs=" + self.coordinate_system + "&index=yes"
+        # tr_name = "prprpr"
+        # vl = QgsVectorLayer(suri, tr_name, "memory")
+        # pr = vl.dataProvider()
+        # vl.updateExtents()
+        # fet = QgsFeature()
+        # for pt in list_cross_point:
+        #     print(pt)
+        #     fet.setGeometry(QgsGeometry.fromPointXY(pt))
+        #     pr.addFeatures([fet])
+        #     vl.updateExtents()
+            
+        # vl.updateExtents()
+        # if not vl.isValid():
+        #     print("Layer failed to load!")
+        # else:
+        #     QgsProject.instance().addMapLayer(vl)
 
             
 
