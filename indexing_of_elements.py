@@ -319,8 +319,18 @@ class Index_of_element(object):
             return QgsPointXY(xm, ym)
 
         def is_in_obj(point, obj):
-            
-            return true
+            pol_str = ""
+            for el in obj:
+                pol_str += str(el.x()) + ' ' + str(el.y()) + ','
+            pl_str = 'Polygon((' + pol_str[:-1] + '))'
+            polygon_geometry = QgsGeometry.fromWkt(pl_str)
+            point_geometry = QgsGeometry.fromWkt('Point ((' + str(point.x()) + ' ' + str(point.y()) + '))')
+            polygon_geometry_engine = QgsGeometry.createGeometryEngine(polygon_geometry.constGet())
+            polygon_geometry_engine.prepareGeometry()
+            if polygon_geometry_engine.intersects(point_geometry.constGet()):
+                return True
+            else:
+                return False
 
         list_of_classes_index = []
         for index in indexes:
@@ -336,8 +346,9 @@ class Index_of_element(object):
             split_list_of_classes_index.append(list_indexes)
 
         list_crossing_object = []
-        for i in range(len(split_list_of_classes_index) - 1):
-            for el1 in split_list_of_classes_index[i]:
+        for el1 in split_list_of_classes_index[:-1]:
+        # for i in range(len(split_list_of_classes_index) - 1):
+        #     for el1 in split_list_of_classes_index[i]:
                 for el2 in split_list_of_classes_index[-1]:
                     cross = list(set(el1.list_of_indexes) & set(el2.list_of_indexes))
                     if cross:
@@ -350,7 +361,7 @@ class Index_of_element(object):
             layer2_name = self.project.mapLayersByName(el2.layer_name)[0]
             feature1 = layer1_name.getFeature(int(el1.id_f))
             feature2 = layer2_name.getFeature(int(el2.id_f))
-
+            list_pt = []
             list_points1 = feature1.geometry().asMultiPolygon()[0][0]
             list_points2 = feature2.geometry().asPolygon()[0]
             for i in range(len(list_points1) - 1):
@@ -362,6 +373,8 @@ class Index_of_element(object):
                         moved_pt = split_line((line1[0],cross_pt))
                         if is_in_obj(moved_pt, list_points2):
                             moved_pt = split_line((cross_pt, line1[1]))
+                        list_pt.append(moved_pt)
+            
 
 
                         
@@ -383,10 +396,6 @@ class Index_of_element(object):
         #     print("Layer failed to load!")
         # else:
         #     QgsProject.instance().addMapLayer(vl)
-
-            
-
-
 
 
 obj = Index_of_element(["lakeII"])
