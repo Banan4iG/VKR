@@ -4,13 +4,13 @@ import numpy as np
 #Возвращает одноэлементный экземпляр QgsProject
 project = QgsProject.instance()
 #Получить список соответствующих зарегистрированных слоев по имени слоя.
-layer = project.mapLayersByName("murom_b")[0]
+layer = project.mapLayersByName("Nir")[0]
 #layer = project.mapLayersByName("test5")[0]
 print(layer)
 feat = layer.getFeatures()
 
 #загрузка фото
-img = cv2.imread('D:/QGIS/tiles/5_contr.png')
+img = cv2.imread('C:/Users/kashi/Desktop/img/0_contr.png')
 #COLOR_BGR2GRAY преобразование между RGB / BGR и оттенками серого, преобразование цветов
 imagegray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 sourceColor = np.array(imagegray)[:-15,:]
@@ -135,7 +135,7 @@ for feature in feat:
                 tempRastRastObj.append(point)
 
 # Отрисовка недостоющих объектов
-suri = "MultiPolygon?crs=epsg:20008&index=yes"
+suri = "MultiPolygon?crs=EPSG:32638&index=yes"
 layer = QgsVectorLayer(suri, "treangle", "memory")
 i = 0
 for geomF in pointRastr:

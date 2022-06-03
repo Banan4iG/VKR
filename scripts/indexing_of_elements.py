@@ -348,6 +348,41 @@ class Index_of_element(object):
                 list_pt_mvd.append(QgsPointXY(x_new, y_new))
             return list_pt_mvd
         
+        def get_min_max_ind(list_pt_with_i, list_points1):
+            list_i = [x for x, y in list_pt_with_i]
+            if len(list_i) == len(set(list_i)):
+                min_el = min(list_pt_with_i, key=lambda x: x[0])[1]
+                min_id = min(list_pt_with_i, key=lambda x: x[0])[0]
+                max_el = max(list_pt_with_i, key=lambda x: x[0])[1]
+                max_id = max(list_pt_with_i, key=lambda x: x[0])[0] + 1
+            else:
+                min_id = min(list_pt_with_i, key=lambda x: x[0])[0]
+                max_id = max(list_pt_with_i, key=lambda x: x[0])[0]
+                pt = list_points1[min_id]
+                if min == max:
+                    distances = []
+                    for k, p in list_pt_with_i:
+                        distances.append(e_distance(pt, p))
+                    min_el = list_pt_with_i[distances.index(min(distances))][1]
+                    max_el = list_pt_with_i[distances.index(max(distances))][1]
+                else:
+                    min_l = []
+                    max_l = []
+                    for k, p in list_pt_with_i:
+                        if k == min_id: min_l.append((k,p))
+                        if k == max_id: max_l.append((k,p))
+                    distances = []
+                    for k, p in min_l:
+                        distances.append(e_distance(pt, p))
+                    min_el = list_pt_with_i[distances.index(min(distances))][1]
+                    distances = []
+                    for k, p in max_l:
+                        distances.append(e_distance(pt, p))
+                    max_el = list_pt_with_i[distances.index(max(distances))][1]
+                max_id += 1
+            return [min_el, min_id, max_el, max_id]
+
+
         list_of_classes_index = []
         for index in indexes:
             data = index.split("_")
@@ -397,10 +432,11 @@ class Index_of_element(object):
                 if is_in_obj(pt, list_points1):
                     list_pt_in_big_obj.append(pt)
             
-            min_el = min(list_pt_with_i, key=lambda x: x[0])[1]
-            min_id = min(list_pt_with_i, key=lambda x: x[0])[0]
-            max_el = max(list_pt_with_i, key=lambda x: x[0])[1]
-            max_id = max(list_pt_with_i, key=lambda x: x[0])[0] + 1
+            # min_el = min(list_pt_with_i, key=lambda x: x[0])[1]
+            # min_id = min(list_pt_with_i, key=lambda x: x[0])[0]
+            # max_el = max(list_pt_with_i, key=lambda x: x[0])[1]
+            # max_id = max(list_pt_with_i, key=lambda x: x[0])[0] + 1
+            min_el, min_id, max_el, max_id = get_min_max_ind(list_pt_with_i, list_points1)
             curent_pt = min_el
             list_pr_right_pos = []
             while(list_pt_in_big_obj):

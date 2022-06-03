@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-img = cv2.imread('E:/Lab/4course2s/NIR/vec/tiles/5_contr.png')
+img = cv2.imread('C:/Users/kashi/Desktop/img/0_contr.png')
 #разделяем изображение на 3 канала
 layers = cv2.split(img)
 imgnp = layers[1]
@@ -21,7 +21,7 @@ contours, _ = cv2.findContours(imgnp_med, cv2.RETR_LIST, cv2.LINE_4)
 listGeom = []
 i = 0
 j = 0
-suri = "MultiPolygon?crs=epsg:20008&index=yes"
+suri = "MultiPolygon?crs=EPSG:32638&index=yes"
 vl = QgsVectorLayer(suri, "treangle0", "memory")
 removeList = []
 for count in contours:
@@ -33,8 +33,8 @@ for count in contours:
         a = []
         b = []
         for point in approximations:
-            b.append(QgsPointXY(point[0][0] -20, -point[0][1] + 20))
-        b.append(QgsPointXY(approximations[0][0][0]-20,-approximations[0][0][1]+20))
+            b.append(QgsPointXY(point[0][0], -point[0][1]))
+        b.append(QgsPointXY(approximations[0][0][0],-approximations[0][0][1]))
         a.append(b)
         fet.setGeometry(QgsGeometry.fromPolygonXY(a))
         if ( j == 0):
@@ -98,7 +98,7 @@ for geom in removeList:
         listGeom.remove(geom)
 
 
-suri = "MultiPolygon?crs=epsg:20008&index=yes"
+suri = "MultiPolygon?crs=EPSG:32638&index=yes"
 vl = QgsVectorLayer(suri, "Nir" , "memory")
 for geomF in listGeom:
     fet = QgsFeature()
