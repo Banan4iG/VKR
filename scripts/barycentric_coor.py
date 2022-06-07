@@ -1,4 +1,3 @@
-#from indexing_of_elements import Index_of_element
 from posixpath import split
 from random import triangular
 from scipy.spatial import Delaunay
@@ -20,7 +19,7 @@ class Moved:
         self.dict_points1000 = {}
         self.coordinate_system = QgsProject.instance().crs().authid()
 
-    #функция выполняющая проверку находится ли точка внтутри треугольника
+    #функция выполняющая проверку находится ли точка внутри треугольника
     def is_in_triangle(self, pointXY, triangle):
         pointX = pointXY[0]
         pointY = pointXY[1]
@@ -37,21 +36,7 @@ class Moved:
             return True
         else:
             return False
-
-    def fromSquarToTriangle(self, layer):
-        features = layer.getFeatures()
-        triangles = []
-        for feature in features:
-            geom = feature.geometry()
-            list_points = geom.asMultiPolygon()
-            points = []
-            for point in list_points[0][0]:
-                pointXY = [point.x(), point.y()]
-                points.append(pointXY)
-            triangles.append([points[0], points[1], points[3]])
-            triangles.append([points[1], points[2], points[3]])
-        return triangles
-
+    
     #функция отрисовки треугольника
     def draw_triangles(self, vertex_point_in, vertex_point_out):
         def toFixed(numObj, digits=0):
@@ -77,7 +62,7 @@ class Moved:
         #выполнение треангуляции Делоне
         points = np.array(point_vertex)
         tri = Delaunay(points)
-        triangleXY_in = points[tri.simplices]     
+        triangleXY_in = points[tri.simplices]
         
         points = np.array(point_vertex_wrong)
         tri = Delaunay(points)
@@ -203,10 +188,10 @@ class Moved:
             return dict(x_min=extent200.xMinimum(), x_max=extent200.xMaximum(), 
                         y_min=extent200.yMinimum(), y_max=extent200.yMaximum())
              
-        img_1 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline200.tif").convert('L'))
-        img_2 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline1000.tif").convert('L'))
-#        img_1 = np.array(Image.open("E:/Никита/ИС-118/Диплом/VKR/rastr_admline200.tif").convert('L'))
-#        img_2 = np.array(Image.open("E:/Никита/ИС-118/Диплом/VKR/rastr_admline1000.tif").convert('L'))
+#        img_1 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline200.tif").convert('L'))
+#        img_2 = np.array(Image.open("C:/Users/kashi/Documents/Никита/ИС-118/Диплом/VKR/rastr_admline1000.tif").convert('L'))
+        img_1 = np.array(Image.open("E:/Никита/ИС-118/Диплом/VKR/images/rastr_admline200.tif").convert('L'))
+        img_2 = np.array(Image.open("E:/Никита/ИС-118/Диплом/VKR/images/rastr_admline1000.tif").convert('L'))
         #img_1 = np.where(img_1==255, 0, 255)
 
         temp1 = img_1
@@ -345,35 +330,14 @@ class Moved:
             otrs.append([xm2, ym2])
         otrs.append(points[-1])
         return otrs
-    
-    # def split_line(self, points, count = 2):
-    #     def dev(pt,ct):
-    #         res = []
-    #         xm = (pt[0][0] + pt[1][0]) / 2
-    #         ym = (pt[0][1] + pt[1][1]) / 2
-    #         ct -= 1
-    #         if ct > 0: 
-    #             res.append(dev( [[pt[0][0], pt[0][1]], [xm, ym] ], count))
-    #             res.append([xm, ym]) 
-    #             res.append(dev( [[xm, ym], [pt[1][0], pt[1][1]]], count))
-    #         else:
-    #             res.append([xm, ym])
-    #         return res
-    #     otrs = []
-    #     for i in range(len(points) - 1):
-    #         line = [points[i], points[i+1]]
-    #         otrs.append(points[i])
-    #         otrs += dev(line, count)
-    #     otrs.append(points[-1])
-    #     return otrs
-    
+       
     #основная функция запускаемая пользователем
     
     def run(self):
         project = QgsProject.instance()
         #удаление слоёв
         for layer in project.mapLayers().values():
-            if layer.name().startswith("triangle") or layer.name().startswith("moved"): #or layer.name().startswith("pt"):
+            if layer.name().startswith("triangle") or layer.name().startswith("moved") or layer.name().startswith("pt"):
                 project.removeMapLayer(layer.id())
         
         #self.sift_create()
